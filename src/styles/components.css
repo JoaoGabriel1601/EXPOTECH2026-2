@@ -51,7 +51,16 @@
   color: var(--text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s ease;
+  display: inline-block;
+}
+.metric-card__value--changed {
+  animation: valuePulse 0.45s ease;
+}
+@keyframes valuePulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); color: var(--accent); }
+  100% { transform: scale(1); }
 }
 .metric-card__unit {
   font-size: 14px;

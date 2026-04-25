@@ -13,13 +13,16 @@ import {
   ThermometerIcon,
   TargetIcon,
   DropIcon,
+  PowerIcon,
 } from "./components/icons";
 import { useSensorData } from "./hooks/useSensorData";
 import {
   CARD_COLORS,
+  CARD_COLORS_EFFICIENCY,
   OCCUPANCY_THRESHOLDS,
   HUMIDITY_THRESHOLDS,
   PERIOD_OPTIONS,
+  computeAcUsage,
 } from "./constants";
 import {
   dataToCsv,
@@ -40,6 +43,11 @@ const ChartOccupancy = lazy(() =>
 const ChartHumidity = lazy(() =>
   import("./components/charts/ChartHumidity").then((m) => ({
     default: m.ChartHumidity,
+  }))
+);
+const ChartAcUsage = lazy(() =>
+  import("./components/charts/ChartAcUsage").then((m) => ({
+    default: m.ChartAcUsage,
   }))
 );
 
@@ -88,6 +96,8 @@ export default function App() {
     setManualMode,
   } = useSensorData();
   const [periodId, setPeriodId] = useState("8h");
+
+  const acUsage = useMemo(() => computeAcUsage(history), [history]);
 
   const filteredHistory = useMemo(() => {
     const period = PERIOD_OPTIONS.find((p) => p.id === periodId);
@@ -139,7 +149,10 @@ export default function App() {
   }
 
   return (
-    <main className="dashboard">
+    <main className="dashboard" id="main">
+      <a className="skip-link" href="#main">
+        Pular para o conteúdo
+      </a>
       <Header
         acOn={acOn}
         manualMode={manualMode}
@@ -188,6 +201,18 @@ export default function App() {
           sub={describeHumidity(live.umidInt)}
           color={CARD_COLORS.umidInt}
         />
+        <MetricCard
+          icon={PowerIcon}
+          label="Uso do A/C"
+          value={Math.round(acUsage.percent)}
+          unit="%"
+          sub={
+            acUsage.totalHours > 0
+              ? `${acUsage.hoursOn.toFixed(1)} h ligado em ${acUsage.totalHours.toFixed(1)} h`
+              : "Coletando dados..."
+          }
+          color={CARD_COLORS_EFFICIENCY}
+        />
       </section>
 
       <SectionTitle
@@ -212,6 +237,13 @@ export default function App() {
       <div className="panel panel--chart">
         <Suspense fallback={<ChartFallback />}>
           <ChartHumidity data={filteredHistory} />
+        </Suspense>
+      </div>
+
+      <SectionTitle>Uso do A/C ao longo do tempo</SectionTitle>
+      <div className="panel panel--chart">
+        <Suspense fallback={<ChartFallback />}>
+          <ChartAcUsage data={filteredHistory} />
         </Suspense>
       </div>
 

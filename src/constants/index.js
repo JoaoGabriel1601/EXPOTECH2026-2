@@ -72,6 +72,35 @@ export const SENSORS = [
   { id: "firebase", label: "Firebase", detail: "Sincronizado" },
 ];
 
+export const CARD_COLORS_EFFICIENCY = "#f43f5e";
+
+export function computeAcUsage(history) {
+  if (!history || history.length < 2) {
+    return { hoursOn: 0, totalHours: 0, percent: 0 };
+  }
+  let onMs = 0;
+  for (let i = 0; i < history.length - 1; i++) {
+    const cur = history[i];
+    const next = history[i + 1];
+    if (
+      typeof cur.timestamp !== "number" ||
+      typeof next.timestamp !== "number"
+    )
+      continue;
+    const delta = next.timestamp - cur.timestamp;
+    if (delta <= 0) continue;
+    if (cur.tempAlvo > 0) onMs += delta;
+  }
+  const first = history[0].timestamp;
+  const last = history[history.length - 1].timestamp;
+  const totalMs = Math.max(0, last - first);
+  return {
+    hoursOn: onMs / 3600000,
+    totalHours: totalMs / 3600000,
+    percent: totalMs > 0 ? (onMs / totalMs) * 100 : 0,
+  };
+}
+
 export const PERIOD_OPTIONS = [
   { id: "1h", label: "1h", hours: 1 },
   { id: "4h", label: "4h", hours: 4 },
