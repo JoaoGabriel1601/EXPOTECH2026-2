@@ -11,21 +11,33 @@ import {
 import { CustomTooltip } from "../CustomTooltip";
 import { CHART_COLORS } from "../../constants";
 
-const axisStyle = { fontSize: 10, fill: "var(--text-faint)" };
+const axisStyle = {
+  fontSize: 11,
+  fill: "var(--text-muted)",
+  fontWeight: 500,
+};
 
 function ChartOccupancyComponent({ data }) {
   return (
     <ResponsiveContainer width="100%" height={200}>
-      <AreaChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+      <AreaChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 16 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
         <XAxis
           dataKey="time"
           tick={axisStyle}
-          interval={Math.max(1, Math.floor(data.length / 8))}
+          interval="preserveStartEnd"
+          minTickGap={40}
+          tickMargin={8}
           axisLine={false}
           tickLine={false}
         />
-        <YAxis tick={axisStyle} axisLine={false} tickLine={false} width={32} />
+        <YAxis
+          tick={axisStyle}
+          axisLine={false}
+          tickLine={false}
+          width={36}
+          padding={{ top: 4, bottom: 8 }}
+        />
         <Tooltip content={<CustomTooltip />} />
         <defs>
           <linearGradient id="gradPessoas" x1="0" y1="0" x2="0" y2="1">

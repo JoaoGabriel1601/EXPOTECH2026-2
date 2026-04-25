@@ -20,7 +20,6 @@ import {
   OCCUPANCY_THRESHOLDS,
   HUMIDITY_THRESHOLDS,
   PERIOD_OPTIONS,
-  HISTORY_SAMPLES_PER_HOUR,
 } from "./constants";
 import {
   dataToCsv,
@@ -93,8 +92,12 @@ export default function App() {
   const filteredHistory = useMemo(() => {
     const period = PERIOD_OPTIONS.find((p) => p.id === periodId);
     if (!period) return history;
-    const wanted = period.hours * HISTORY_SAMPLES_PER_HOUR;
-    return history.slice(-wanted);
+    const latestTs = history[history.length - 1]?.timestamp;
+    if (typeof latestTs !== "number") return history;
+    const cutoff = latestTs - period.hours * 60 * 60 * 1000;
+    return history.filter(
+      (s) => typeof s.timestamp === "number" && s.timestamp >= cutoff
+    );
   }, [history, periodId]);
 
   const handleExport = useCallback(() => {

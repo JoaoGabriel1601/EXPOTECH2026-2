@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ref, onValue, off, update, push } from "firebase/database";
 import { db, useMockData } from "../config/firebase";
 import { generateHistory, nextLiveSample } from "../utils/mockData";
-import { UPDATE_INTERVAL_MS, HISTORY_MAX_POINTS } from "../constants";
+import {
+  UPDATE_INTERVAL_MS,
+  HISTORY_APPEND_MS,
+  HISTORY_MAX_POINTS,
+} from "../constants";
 
 const CONTROLE_PATH = "controle";
 const EVENTOS_PATH = "eventos";
@@ -25,6 +29,7 @@ export function useSensorData() {
   const acOnRef = useRef(acOn);
   const manualModeRef = useRef(manualMode);
   const manualTargetRef = useRef(manualTarget);
+  const lastHistoryAppendRef = useRef(Date.now());
   acOnRef.current = acOn;
   manualModeRef.current = manualMode;
   manualTargetRef.current = manualTarget;
@@ -40,7 +45,10 @@ export function useSensorData() {
             manualAcOn: acOnRef.current,
             manualTarget: manualTargetRef.current,
           });
-          setHistory((h) => [...h.slice(-(HISTORY_MAX_POINTS - 1)), sample]);
+          if (sample.timestamp - lastHistoryAppendRef.current >= HISTORY_APPEND_MS) {
+            lastHistoryAppendRef.current = sample.timestamp;
+            setHistory((h) => [...h.slice(-(HISTORY_MAX_POINTS - 1)), sample]);
+          }
           return sample;
         });
       }, UPDATE_INTERVAL_MS);
@@ -97,6 +105,7 @@ export function useSensorData() {
         if (val) {
           const entries = Object.values(val)
             .map((e) => ({
+              timestamp: e.t,
               time: new Date(e.t).toLocaleTimeString("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -108,6 +117,7 @@ export function useSensorData() {
               umidInt: e.ui ?? 0,
               umidExt: e.ue ?? 0,
             }))
+            .sort((a, b) => a.timestamp - b.timestamp)
             .slice(-HISTORY_MAX_POINTS);
           setHistory(entries);
         }

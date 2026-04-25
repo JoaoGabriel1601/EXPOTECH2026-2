@@ -16,9 +16,11 @@ export const CARD_COLORS = {
 };
 
 export const UPDATE_INTERVAL_MS = 5000;
-export const HISTORY_HOURS = 8;
+export const HISTORY_HOURS = 12;
 export const HISTORY_SAMPLES_PER_HOUR = 6;
-export const HISTORY_MAX_POINTS = 48;
+export const HISTORY_INTERVAL_MS = 10 * 60 * 1000;
+export const HISTORY_APPEND_MS = 60 * 1000;
+export const HISTORY_MAX_POINTS = 500;
 
 export const CLIMATE_RULES = [
   { minPeople: 0, maxPeople: 0, baseTemp: 0, label: "Desligado" },
@@ -74,5 +76,5 @@ export const PERIOD_OPTIONS = [
   { id: "1h", label: "1h", hours: 1 },
   { id: "4h", label: "4h", hours: 4 },
   { id: "8h", label: "8h", hours: 8 },
-  { id: "24h", label: "24h", hours: 24 },
+  { id: "12h", label: "12h", hours: 12 },
 ];

@@ -12,7 +12,11 @@ import {
 import { CustomTooltip } from "../CustomTooltip";
 import { CHART_COLORS } from "../../constants";
 
-const axisStyle = { fontSize: 10, fill: "var(--text-faint)" };
+const axisStyle = {
+  fontSize: 11,
+  fill: "var(--text-muted)",
+  fontWeight: 500,
+};
 
 function ChartHumidityComponent({ data }) {
   const sampled = useMemo(
@@ -21,21 +25,27 @@ function ChartHumidityComponent({ data }) {
   );
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <BarChart data={sampled} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+      <BarChart data={sampled} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
         <XAxis
           dataKey="time"
           tick={axisStyle}
-          interval={Math.max(1, Math.floor(sampled.length / 8))}
+          interval={0}
+          angle={-30}
+          textAnchor="end"
+          height={56}
+          tickMargin={10}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           domain={[0, 100]}
           tick={axisStyle}
+          tickFormatter={(value) => `${value}%`}
           axisLine={false}
           tickLine={false}
-          width={32}
+          width={44}
+          padding={{ top: 4, bottom: 4 }}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 11, color: "var(--label)", paddingTop: 8 }} />

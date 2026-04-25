@@ -1,6 +1,7 @@
 import {
   HISTORY_HOURS,
   HISTORY_SAMPLES_PER_HOUR,
+  HISTORY_INTERVAL_MS,
   calcTargetTemp,
 } from "../constants";
 
@@ -10,7 +11,27 @@ function formatTime(date) {
   ).padStart(2, "0")}`;
 }
 
-function buildSample({ time, people, externalBase, i }) {
+function targetOccupancy(date) {
+  const h = date.getHours();
+  if (h < 7) return 1;
+  if (h < 8) return 5;
+  if (h < 9) return 18;
+  if (h < 12) return 28;
+  if (h === 12) return 10;
+  if (h < 16) return 24;
+  if (h < 18) return 12;
+  return 2;
+}
+
+function nextOccupancy(prev, target) {
+  const diff = target - prev;
+  const lerp = Math.sign(diff) * Math.min(Math.abs(diff), 3);
+  const noise = Math.floor(Math.random() * 5 - 2);
+  return Math.max(0, prev + lerp + noise);
+}
+
+function buildSample({ timestamp, people, i }) {
+  const externalBase = 28;
   const tempExt = externalBase + Math.sin(i / 12) * 4 + Math.random() * 1.5;
   const targetTemp = calcTargetTemp(people, tempExt);
   const tempInt =
@@ -18,7 +39,8 @@ function buildSample({ time, people, externalBase, i }) {
       ? targetTemp + Math.random() * 2 - 0.5
       : tempExt - 2 + Math.random();
   return {
-    time,
+    timestamp,
+    time: formatTime(new Date(timestamp)),
     pessoas: Math.max(0, people),
     tempInt: Math.round(tempInt * 10) / 10,
     tempExt: Math.round(tempExt * 10) / 10,
@@ -30,35 +52,17 @@ function buildSample({ time, people, externalBase, i }) {
 
 export function generateHistory(hours = HISTORY_HOURS) {
   const data = [];
-  const now = new Date();
-  now.setHours(8, 0, 0, 0);
-  let people = 0;
+  const now = Date.now();
+  const total = hours * HISTORY_SAMPLES_PER_HOUR;
+  const startDate = new Date(now - (total - 1) * HISTORY_INTERVAL_MS);
+  let people = targetOccupancy(startDate);
 
-  const totalSamples = hours * HISTORY_SAMPLES_PER_HOUR;
-  for (let i = 0; i < totalSamples; i++) {
-    const time = new Date(now.getTime() + i * 10 * 60000);
-    const h = time.getHours();
-    const m = time.getMinutes();
-
-    if (h === 8 && m === 0) people = 0;
-    else if (h === 8 && m >= 20)
-      people = Math.min(people + Math.floor(Math.random() * 8 + 2), 35);
-    else if (h >= 9 && h < 12)
-      people = Math.max(15, Math.min(38, people + Math.floor(Math.random() * 5 - 2)));
-    else if (h === 12)
-      people = Math.max(0, people - Math.floor(Math.random() * 10 + 5));
-    else if (h >= 13 && h < 16)
-      people = Math.max(10, Math.min(32, people + Math.floor(Math.random() * 5 - 2)));
-    else people = Math.max(0, people - Math.floor(Math.random() * 5));
-
-    data.push(
-      buildSample({
-        time: formatTime(time),
-        people,
-        externalBase: 28,
-        i,
-      })
-    );
+  for (let i = 0; i < total; i++) {
+    const timestamp = now - (total - 1 - i) * HISTORY_INTERVAL_MS;
+    const date = new Date(timestamp);
+    const target = targetOccupancy(date);
+    people = nextOccupancy(people, target);
+    data.push(buildSample({ timestamp, people, i }));
   }
   return data;
 }
@@ -77,6 +81,7 @@ export function nextLiveSample(prev, override = {}) {
     ta > 0 ? ta + Math.random() * 1.5 - 0.3 : te - 1 + Math.random();
   const now = new Date();
   return {
+    timestamp: now.getTime(),
     time: formatTime(now),
     pessoas: p,
     tempInt: Math.round(ti * 10) / 10,

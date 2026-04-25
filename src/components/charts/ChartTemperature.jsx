@@ -12,26 +12,34 @@ import {
 import { CustomTooltip } from "../CustomTooltip";
 import { CHART_COLORS } from "../../constants";
 
-const axisStyle = { fontSize: 10, fill: "var(--text-faint)" };
+const axisStyle = {
+  fontSize: 11,
+  fill: "var(--text-muted)",
+  fontWeight: 500,
+};
 
 function ChartTemperatureComponent({ data }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 16 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
         <XAxis
           dataKey="time"
           tick={axisStyle}
-          interval={Math.max(1, Math.floor(data.length / 8))}
+          interval="preserveStartEnd"
+          minTickGap={40}
+          tickMargin={8}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           domain={[14, 38]}
           tick={axisStyle}
+          tickFormatter={(value) => `${value}°C`}
           axisLine={false}
           tickLine={false}
-          width={32}
+          width={48}
+          padding={{ top: 4, bottom: 8 }}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 11, color: "var(--label)", paddingTop: 8 }} />
