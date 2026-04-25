@@ -36,6 +36,7 @@ npm run dev
 | `VITE_FIREBASE_MEASUREMENT_ID` | Measurement ID (Analytics) |
 | `VITE_FIREBASE_DATABASE_URL` | URL do Realtime Database |
 | `VITE_USE_MOCK_DATA` | `true` para usar dados simulados, `false` para Firebase real |
+| `VITE_SKIP_AUTH` | `true` pula a tela de login (use só em dev) |
 
 > Por padrão `VITE_USE_MOCK_DATA=true`. Mude para `false` quando o ESP32 estiver gravando no Realtime Database.
 
@@ -77,7 +78,8 @@ src/
 │       └── ChartHumidity.jsx
 ├── hooks/
 │   ├── useSensorData.js      leitura real-time + fallback mock + ações de controle
-│   └── useEventLog.js        log de eventos
+│   ├── useEventLog.js        log de eventos
+│   └── useAuth.js            autenticação Firebase (email/senha)
 ├── utils/
 │   ├── mockData.js           geração de dados simulados
 │   └── csvExport.js          export CSV
@@ -158,6 +160,12 @@ O dashboard tem dois modos, controlados por `VITE_USE_MOCK_DATA`:
 - **`false`** — conecta ao Realtime Database e ouve `sensores`, `historico` e `.info/connected`.
 
 O ControlPanel, em modo simulação, mostra um aviso e não envia escritas.
+
+## Autenticação
+
+O dashboard requer login (email/senha) via Firebase Auth. Crie usuários no console Firebase em **Authentication → Users → Add user**.
+
+A autenticação é **independente do modo de dados**: você consegue logar e ver mock data, ou logar e ver Firebase real, conforme `VITE_USE_MOCK_DATA`. Para pular o login em desenvolvimento, defina `VITE_SKIP_AUTH=true`.
 
 ## Segurança
 

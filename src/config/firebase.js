@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,13 +14,8 @@ const firebaseConfig = {
 };
 
 export const useMockData = import.meta.env.VITE_USE_MOCK_DATA === "true";
+export const skipAuth = import.meta.env.VITE_SKIP_AUTH === "true";
 
-let app = null;
-let db = null;
-
-if (!useMockData) {
-  app = initializeApp(firebaseConfig);
-  db = getDatabase(app);
-}
-
-export { app, db };
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = useMockData ? null : getDatabase(app);

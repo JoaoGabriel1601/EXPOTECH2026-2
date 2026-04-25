@@ -1,8 +1,15 @@
 import { StatusPill } from "./StatusPill";
 import { ThemeToggle } from "./ThemeToggle";
-import { DownloadIcon } from "./icons";
+import { DownloadIcon, LogoutIcon } from "./icons";
 
-export function Header({ acOn, manualMode, connectionStatus, onExport }) {
+export function Header({
+  acOn,
+  manualMode,
+  connectionStatus,
+  onExport,
+  user,
+  onSignOut,
+}) {
   return (
     <header className="header">
       <div>
@@ -10,7 +17,11 @@ export function Header({ acOn, manualMode, connectionStatus, onExport }) {
           <span className="header__title-accent">clima</span>
           <span className="header__title-faded">control</span>
         </h1>
-        <p className="header__subtitle">Sistema de climatização autônoma</p>
+        <p className="header__subtitle">
+          {user?.email
+            ? `Olá, ${user.displayName || user.email}`
+            : "Sistema de climatização autônoma"}
+        </p>
       </div>
       <div className="header__status">
         <StatusPill on={acOn} label={acOn ? "A/C ligado" : "A/C desligado"} />
@@ -31,14 +42,25 @@ export function Header({ acOn, manualMode, connectionStatus, onExport }) {
             type="button"
             className="icon-button"
             onClick={onExport}
-            aria-label="Exportar dados em CSV"
-            title="Exportar CSV"
+            aria-label="Baixar log do sistema em PDF"
+            title="Baixar PDF"
           >
             <DownloadIcon />
-            CSV
+            PDF
           </button>
         )}
         <ThemeToggle />
+        {onSignOut && (
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onSignOut}
+            aria-label="Sair da conta"
+            title="Sair"
+          >
+            <LogoutIcon />
+          </button>
+        )}
       </div>
     </header>
   );

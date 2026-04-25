@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { Header } from "./components/Header";
+import { Login } from "./components/Login";
 import { MetricCard } from "./components/MetricCard";
 import { SectionTitle } from "./components/SectionTitle";
 import { RulesTable } from "./components/RulesTable";
@@ -16,6 +17,7 @@ import {
   PowerIcon,
 } from "./components/icons";
 import { useSensorData } from "./hooks/useSensorData";
+import { useAuth } from "./hooks/useAuth";
 import {
   CARD_COLORS,
   CARD_COLORS_EFFICIENCY,
@@ -24,11 +26,7 @@ import {
   PERIOD_OPTIONS,
   computeAcUsage,
 } from "./constants";
-import {
-  dataToCsv,
-  downloadCsv,
-  SENSOR_DATA_COLUMNS,
-} from "./utils/csvExport";
+import { downloadSensorPdf } from "./utils/pdfExport";
 
 const ChartTemperature = lazy(() =>
   import("./components/charts/ChartTemperature").then((m) => ({
@@ -83,6 +81,12 @@ function describeTempStatus(live) {
 
 export default function App() {
   const {
+    user,
+    loading: authLoading,
+    signIn,
+    signOut,
+  } = useAuth();
+  const {
     history,
     live,
     acOn,
@@ -111,10 +115,29 @@ export default function App() {
   }, [history, periodId]);
 
   const handleExport = useCallback(() => {
-    const csv = dataToCsv(filteredHistory, SENSOR_DATA_COLUMNS);
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    downloadCsv(`climacontrol-${periodId}-${stamp}.csv`, csv);
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const period = PERIOD_OPTIONS.find((p) => p.id === periodId);
+    downloadSensorPdf({
+      filename: `log_${dd}-${mm}-${yyyy}.pdf`,
+      rows: filteredHistory,
+      periodLabel: period?.label ?? periodId,
+    });
   }, [filteredHistory, periodId]);
+
+  if (authLoading) {
+    return (
+      <div className="dashboard" aria-busy="true">
+        <div className="loading-state">Verificando sessão...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onSignIn={signIn} />;
+  }
 
   if (error) {
     return (
@@ -123,6 +146,8 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
+          user={user}
+          onSignOut={signOut}
         />
         <div className="error-state" role="alert">
           Erro ao carregar dados: {error.message}
@@ -138,6 +163,8 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
+          user={user}
+          onSignOut={signOut}
         />
         <div className="metric-grid" aria-busy="true">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -158,6 +185,8 @@ export default function App() {
         manualMode={manualMode}
         connectionStatus={connectionStatus}
         onExport={handleExport}
+        user={user}
+        onSignOut={signOut}
       />
 
       <section className="metric-grid" aria-label="Métricas atuais">
