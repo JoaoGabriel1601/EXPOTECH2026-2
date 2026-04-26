@@ -39,10 +39,14 @@ export function Login({ onSignIn }) {
   return (
     <main className="login">
       <form className="login__card" onSubmit={handleSubmit} noValidate>
-        <h1 className="login__title">
-          <span className="login__title-accent">clima</span>
-          <span className="login__title-faded">control</span>
-        </h1>
+        <img
+          className="login__logo"
+          src="/logo.svg"
+          alt="ClimaControl"
+          width={220}
+          height={220}
+        />
+        <h1 className="login__title sr-only">ClimaControl</h1>
         <p className="login__subtitle">
           Acesse o dashboard de climatização autônoma
         </p>

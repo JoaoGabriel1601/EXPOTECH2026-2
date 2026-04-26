@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "ClimaControl",
+    "slug": "climacontrol",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "climacontrol",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0e15"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.climacontrol.app"
+    },
+    "android": {
+      "package": "com.climacontrol.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0e15"
+      },
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "VIBRATE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-local-authentication",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0a0e15",
+          "image": "./assets/splash.png",
+          "imageWidth": 280
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#3b82f6"
+        }
+      ],
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "firebaseApiKey": "REPLACE_WITH_YOUR_KEY",
+      "firebaseAuthDomain": "REPLACE_WITH_YOUR_AUTHDOMAIN",
+      "firebaseProjectId": "REPLACE_WITH_YOUR_PROJECT_ID",
+      "firebaseStorageBucket": "REPLACE_WITH_YOUR_BUCKET",
+      "firebaseMessagingSenderId": "REPLACE_WITH_SENDER_ID",
+      "firebaseAppId": "REPLACE_WITH_APP_ID",
+      "firebaseDatabaseUrl": "REPLACE_WITH_DATABASE_URL",
+      "firebaseMeasurementId": "",
+      "useMockData": true,
+      "skipAuth": false,
+      "eas": {
+        "projectId": "91e62a2e-c1e9-4267-9fc9-b53135afa00f"
+      }
+    },
+    "owner": "joaogabrielfelix"
+  }
+}

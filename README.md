@@ -1,8 +1,19 @@
 # ClimaControl — Dashboard de Climatização Autônoma
 
+<p align="center">
+  <img src="public/favicon.svg" width="120" alt="ClimaControl logo" />
+</p>
+
 Dashboard React em tempo real para um sistema de climatização autônoma baseado em ESP32 + Firebase. Monitora ocupação, temperatura interna/externa e umidade, e calcula a temperatura alvo do A/C automaticamente conforme a quantidade de pessoas e o calor externo.
 
 > **Projeto Integrador — UNIFECAF**
+
+| Plataforma | Localização | Tech |
+|---|---|---|
+| 🌐 **Web** (este repo) | `src/` | React 19 + Vite 8 + Recharts |
+| 📱 **Android APK** | [`mobile/`](mobile/) | Expo SDK 52 + React Native + Victory Native |
+
+> O app mobile reutiliza ~70% deste código (hooks, constants, mock, regras). Ver [`mobile/README.md`](mobile/README.md) para build do APK.
 
 ## Stack
 
