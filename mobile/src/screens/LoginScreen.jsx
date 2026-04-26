@@ -32,7 +32,9 @@ const FRIENDLY_ERRORS = {
 
 function friendlyError(err) {
   if (!err) return null;
-  return FRIENDLY_ERRORS[err.code] || err.message || "Erro ao fazer login.";
+  if (FRIENDLY_ERRORS[err.code]) return FRIENDLY_ERRORS[err.code];
+  if (err.code) return `${err.code}: ${err.message ?? ""}`.trim();
+  return err.message || "Erro ao fazer login.";
 }
 
 export function LoginScreen() {
