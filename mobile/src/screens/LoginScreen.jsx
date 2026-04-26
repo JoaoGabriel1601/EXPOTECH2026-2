@@ -98,7 +98,7 @@ export function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoWrap}>
-            <Logo size={240} withBackground withText />
+            <Logo size={160} withBackground withText />
           </View>
 
           <View style={styles.card}>
