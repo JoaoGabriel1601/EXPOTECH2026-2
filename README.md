@@ -161,8 +161,6 @@ npm run build
 npx firebase deploy --only hosting
 ```
 
-Há também workflow do GitHub Actions em [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) que faz deploy automático quando há push para `main`. Veja [`FIREBASE_SETUP.md`](FIREBASE_SETUP.md) para os secrets necessários.
-
 ## Modo simulação vs. Firebase
 
 O dashboard tem dois modos, controlados por `VITE_USE_MOCK_DATA`:

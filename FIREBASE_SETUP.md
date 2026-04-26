@@ -58,16 +58,3 @@ Para a Tarefa 1.5, habilite no console:
 - Crie ao menos um usuário admin
 - No backend (ESP32 ou Cloud Function), gere custom tokens com `admin: true`
 
-## 4. (Opcional) Configurar GitHub Actions Secrets
-
-Para a Tarefa 6.2 (CI/CD), adicione no repositório GitHub → Settings → Secrets:
-
-- `FIREBASE_API_KEY`
-- `FIREBASE_AUTH_DOMAIN`
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_STORAGE_BUCKET`
-- `FIREBASE_MESSAGING_SENDER_ID`
-- `FIREBASE_APP_ID`
-- `FIREBASE_MEASUREMENT_ID`
-- `FIREBASE_DATABASE_URL`
-- `FIREBASE_SERVICE_ACCOUNT` (gere em Project Settings → Service accounts → Generate new private key)
