@@ -1,6 +1,7 @@
 import { StatusPill } from "./StatusPill";
 import { ThemeToggle } from "./ThemeToggle";
 import { DownloadIcon, LogoutIcon } from "./icons";
+import { useMockData } from "../config/firebase";
 
 export function Header({
   acOn,
@@ -10,6 +11,15 @@ export function Header({
   user,
   onSignOut,
 }) {
+  const isMock = useMockData || connectionStatus === "mock";
+  const liveLabel = isMock
+    ? "Modo simulação"
+    : connectionStatus === "online"
+      ? "Ao vivo"
+      : connectionStatus === "connecting"
+        ? "Conectando..."
+        : "Offline";
+
   return (
     <header className="header">
       <div className="header__brand">
@@ -36,15 +46,16 @@ export function Header({
         <StatusPill on={acOn} label={acOn ? "A/C ligado" : "A/C desligado"} />
         {manualMode && <StatusPill on label="Modo manual" />}
         <span
-          className="live-pill"
-          aria-label={`Status da conexão: ${connectionStatus}`}
+          className={`live-pill${isMock ? " live-pill--mock" : ""}`}
+          aria-label={`Status da conexão: ${liveLabel}`}
+          title={
+            isMock
+              ? "Dados simulados — defina VITE_USE_MOCK_DATA=false para conectar ao Firebase"
+              : undefined
+          }
         >
           <span className="live-pill__dot" aria-hidden="true" />
-          {connectionStatus === "online" || connectionStatus === "mock"
-            ? "Ao vivo"
-            : connectionStatus === "connecting"
-            ? "Conectando..."
-            : "Offline"}
+          {liveLabel}
         </span>
         {onExport && (
           <button

@@ -46,10 +46,10 @@ npm run dev
 | `VITE_FIREBASE_APP_ID` | App ID Web |
 | `VITE_FIREBASE_MEASUREMENT_ID` | Measurement ID (Analytics) |
 | `VITE_FIREBASE_DATABASE_URL` | URL do Realtime Database |
-| `VITE_USE_MOCK_DATA` | `true` para usar dados simulados, `false` para Firebase real |
+| `VITE_USE_MOCK_DATA` | `false` (default) usa Firebase real; `true` força dados simulados |
 | `VITE_SKIP_AUTH` | `true` pula a tela de login (use só em dev) |
 
-> Por padrão `VITE_USE_MOCK_DATA=true`. Mude para `false` quando o ESP32 estiver gravando no Realtime Database.
+> Por padrão `VITE_USE_MOCK_DATA=false` — o app conecta ao Realtime Database real. Se as variáveis `VITE_FIREBASE_*` não estiverem preenchidas, o app cai em modo simulação automaticamente. Para uma demo sem o ESP32 ligado, basta definir `VITE_USE_MOCK_DATA=true`.
 
 ## Scripts
 
@@ -167,10 +167,10 @@ Há também workflow do GitHub Actions em [`.github/workflows/deploy.yml`](.gith
 
 O dashboard tem dois modos, controlados por `VITE_USE_MOCK_DATA`:
 
-- **`true`** — gera dados localmente, atualiza a cada 5s. Útil em desenvolvimento e em demonstrações sem hardware ligado.
-- **`false`** — conecta ao Realtime Database e ouve `sensores`, `historico` e `.info/connected`.
+- **`false` (default)** — conecta ao Realtime Database e ouve `sensores`, `historico` e `.info/connected`.
+- **`true`** — gera dados localmente, atualiza a cada 5s. Útil em demonstrações sem hardware ligado.
 
-O ControlPanel, em modo simulação, mostra um aviso e não envia escritas.
+Há também um fallback automático: se as variáveis `VITE_FIREBASE_*` não estiverem preenchidas, o app entra em modo simulação independente da flag — assim o `npm run dev` nunca quebra. Quando o modo simulação está ativo, o header mostra a pill "Modo simulação" em laranja, e o ControlPanel apenas atualiza estado local (não envia escritas).
 
 ## Autenticação
 

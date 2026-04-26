@@ -7,14 +7,15 @@ import {
 import { auth, skipAuth } from "../config/firebase";
 
 const MOCK_USER = { uid: "mock", email: "demo@local", displayName: "Demo" };
+const bypassAuth = skipAuth || !auth;
 
 export function useAuth() {
-  const [user, setUser] = useState(skipAuth ? MOCK_USER : null);
-  const [loading, setLoading] = useState(!skipAuth);
+  const [user, setUser] = useState(bypassAuth ? MOCK_USER : null);
+  const [loading, setLoading] = useState(!bypassAuth);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (skipAuth) return;
+    if (bypassAuth) return;
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
@@ -24,7 +25,7 @@ export function useAuth() {
 
   const signIn = useCallback(async (email, password) => {
     setError(null);
-    if (skipAuth) return { ok: true, user: MOCK_USER };
+    if (bypassAuth) return { ok: true, user: MOCK_USER };
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       return { ok: true, user: cred.user };
@@ -35,7 +36,7 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    if (skipAuth) {
+    if (bypassAuth) {
       setUser(null);
       return;
     }

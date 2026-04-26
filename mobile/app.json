@@ -76,7 +76,7 @@
       "firebaseAppId": "REPLACE_WITH_APP_ID",
       "firebaseDatabaseUrl": "REPLACE_WITH_DATABASE_URL",
       "firebaseMeasurementId": "",
-      "useMockData": true,
+      "useMockData": false,
       "skipAuth": false,
       "eas": {
         "projectId": "91e62a2e-c1e9-4267-9fc9-b53135afa00f"

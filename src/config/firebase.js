@@ -13,9 +13,46 @@ const firebaseConfig = {
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 };
 
-export const useMockData = import.meta.env.VITE_USE_MOCK_DATA === "true";
+const hasFirebaseConfig = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.databaseURL
+);
+const mockFlag = import.meta.env.VITE_USE_MOCK_DATA === "true";
+
+export const useMockData = mockFlag || !hasFirebaseConfig;
+export const mockReason = mockFlag
+  ? "flag"
+  : !hasFirebaseConfig
+    ? "missing-config"
+    : null;
 export const skipAuth = import.meta.env.VITE_SKIP_AUTH === "true";
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = useMockData ? null : getDatabase(app);
+let _app = null;
+let _auth = null;
+let _db = null;
+
+if (hasFirebaseConfig) {
+  _app = initializeApp(firebaseConfig);
+  _auth = getAuth(_app);
+  if (!useMockData) {
+    _db = getDatabase(_app);
+  }
+}
+
+export const app = _app;
+export const auth = _auth;
+export const db = _db;
+
+if (typeof window !== "undefined" && import.meta.env.DEV) {
+  if (useMockData) {
+    console.info(
+      mockReason === "flag"
+        ? "[ClimaControl] VITE_USE_MOCK_DATA=true — modo simulação ativo."
+        : "[ClimaControl] Firebase não configurado — modo simulação ativo."
+    );
+  } else {
+    console.info(
+      "[ClimaControl] Conectado ao Realtime Database:",
+      firebaseConfig.databaseURL
+    );
+  }
+}

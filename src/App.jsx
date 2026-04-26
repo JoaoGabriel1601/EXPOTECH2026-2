@@ -18,6 +18,7 @@ import {
 } from "./components/icons";
 import { useSensorData } from "./hooks/useSensorData";
 import { useAuth } from "./hooks/useAuth";
+import { useMockData } from "./config/firebase";
 import {
   CARD_COLORS,
   CARD_COLORS_EFFICIENCY,
@@ -156,7 +157,7 @@ export default function App() {
     );
   }
 
-  if (loading || !live) {
+  if (loading) {
     return (
       <div className="dashboard">
         <Header
@@ -170,6 +171,35 @@ export default function App() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="skeleton" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!live) {
+    return (
+      <div className="dashboard">
+        <Header
+          acOn={false}
+          manualMode={false}
+          connectionStatus={connectionStatus}
+          user={user}
+          onSignOut={signOut}
+        />
+        <div className="empty-state" role="status">
+          <h2>Aguardando dados dos sensores</h2>
+          <p>
+            Conexão com o Firebase estabelecida, mas o caminho{" "}
+            <code>/sensores</code> ainda está vazio. Assim que o ESP32 enviar a
+            primeira leitura, o dashboard atualiza automaticamente.
+          </p>
+          {!useMockData && (
+            <p className="empty-state__hint">
+              Quer testar a interface sem hardware? Defina{" "}
+              <code>VITE_USE_MOCK_DATA=true</code> no <code>.env</code> e
+              reinicie o servidor.
+            </p>
+          )}
         </div>
       </div>
     );

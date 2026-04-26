@@ -5,6 +5,7 @@ import { StatusPill } from "./StatusPill";
 import { useTheme } from "../contexts/ThemeContext";
 import { Logo } from "./Logo";
 import { radius, spacing, typography } from "../utils/theme";
+import { useMockData } from "../config/firebase";
 
 function HeaderComponent({
   acOn,
@@ -17,14 +18,17 @@ function HeaderComponent({
   const { theme, resolvedMode } = useTheme();
   const styles = makeStyles(theme);
 
-  const liveLabel =
-    connectionStatus === "online" || connectionStatus === "mock"
+  const isMock = useMockData || connectionStatus === "mock";
+  const liveLabel = isMock
+    ? "Modo simulação"
+    : connectionStatus === "online"
       ? "Ao vivo"
       : connectionStatus === "connecting"
         ? "Conectando..."
         : "Offline";
-  const liveDot =
-    connectionStatus === "online" || connectionStatus === "mock"
+  const liveDot = isMock
+    ? theme.warn
+    : connectionStatus === "online"
       ? theme.success
       : connectionStatus === "connecting"
         ? theme.warn

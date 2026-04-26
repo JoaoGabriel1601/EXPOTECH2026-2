@@ -12,6 +12,11 @@ function pick(envKey, extraKey) {
   return extra[extraKey];
 }
 
+function isPlaceholder(value) {
+  if (!value || typeof value !== "string") return true;
+  return value.startsWith("REPLACE_WITH_");
+}
+
 const firebaseConfig = {
   apiKey: pick("EXPO_PUBLIC_FIREBASE_API_KEY", "firebaseApiKey"),
   authDomain: pick("EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN", "firebaseAuthDomain"),
@@ -38,15 +43,24 @@ const firebaseConfig = {
 const useMockFlag = pick("EXPO_PUBLIC_USE_MOCK_DATA", "useMockData");
 const skipAuthFlag = pick("EXPO_PUBLIC_SKIP_AUTH", "skipAuth");
 
-export const useMockData =
-  useMockFlag === true || useMockFlag === "true" || !firebaseConfig.apiKey;
+const hasFirebaseConfig =
+  !isPlaceholder(firebaseConfig.apiKey) &&
+  !isPlaceholder(firebaseConfig.databaseURL);
+const mockFlag = useMockFlag === true || useMockFlag === "true";
+
+export const useMockData = mockFlag || !hasFirebaseConfig;
+export const mockReason = mockFlag
+  ? "flag"
+  : !hasFirebaseConfig
+    ? "missing-config"
+    : null;
 export const skipAuth = skipAuthFlag === true || skipAuthFlag === "true";
 
 let _app = null;
 let _auth = null;
 let _db = null;
 
-if (firebaseConfig.apiKey) {
+if (hasFirebaseConfig) {
   _app = initializeApp(firebaseConfig);
   _auth = initializeAuth(_app, {
     persistence: getReactNativePersistence(AsyncStorage),
@@ -59,3 +73,18 @@ if (firebaseConfig.apiKey) {
 export const app = _app;
 export const auth = _auth;
 export const db = _db;
+
+if (__DEV__) {
+  if (useMockData) {
+    console.info(
+      mockReason === "flag"
+        ? "[ClimaControl] EXPO_PUBLIC_USE_MOCK_DATA=true — modo simulação ativo."
+        : "[ClimaControl] Firebase não configurado — modo simulação ativo."
+    );
+  } else {
+    console.info(
+      "[ClimaControl] Conectado ao Realtime Database:",
+      firebaseConfig.databaseURL
+    );
+  }
+}

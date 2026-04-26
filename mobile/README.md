@@ -2,7 +2,7 @@
 
 App Android nativo do **ClimaControl** — dashboard de climatização autônoma — feito em **React Native + Expo**, reutilizando ~70% da lógica do dashboard web (hooks, constants, utils).
 
-> Roda em modo mock (sem Firebase) por padrão para você poder testar agora mesmo.
+> Conecta ao Firebase real por padrão. Se as chaves não estiverem preenchidas (`app.json` → `expo.extra` ainda com placeholders), cai em modo mock automaticamente — você pode testar agora mesmo sem configurar nada.
 
 ---
 
@@ -55,7 +55,7 @@ Edite [app.json](app.json) → `expo.extra` com suas chaves do Firebase:
 }
 ```
 
-> Mantém `"useMockData": true` para rodar sem Firebase configurado.
+> Default: `"useMockData": false` (conexão real). Coloque `true` se quiser forçar simulação mesmo com chaves preenchidas. Se as chaves estiverem com placeholder (`REPLACE_WITH_*`) ou vazias, o app cai em mock automaticamente — não quebra.
 
 ---
 
