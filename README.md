@@ -163,12 +163,17 @@ npx firebase deploy --only hosting
 
 ## Modo simulação vs. Firebase
 
-O dashboard tem dois modos, controlados por `VITE_USE_MOCK_DATA`:
+O dashboard tem dois eixos independentes:
 
-- **`false` (default)** — conecta ao Realtime Database e ouve `sensores`, `historico` e `.info/connected`.
-- **`true`** — gera dados localmente, atualiza a cada 5s. Útil em demonstrações sem hardware ligado.
+| Cenário | `VITE_FIREBASE_*` | `VITE_USE_MOCK_DATA` | Login | Dashboard |
+|---|---|---|---|---|
+| **Produção** (ESP32 ligado) | preenchido | `false` | Firebase real | Realtime Database |
+| **Demo com login real** | preenchido | `true` | Firebase real | Mock local |
+| **Demo total** (sem config) | vazio | qualquer | Bypass (auto-login) | Mock local |
 
-Há também um fallback automático: se as variáveis `VITE_FIREBASE_*` não estiverem preenchidas, o app entra em modo simulação independente da flag — assim o `npm run dev` nunca quebra. Quando o modo simulação está ativo, o header mostra a pill "Modo simulação" em laranja, e o ControlPanel apenas atualiza estado local (não envia escritas).
+Auth e dados são desacoplados: se as chaves Firebase estão preenchidas, o login sempre usa Firebase Auth, mesmo quando `VITE_USE_MOCK_DATA=true`. Isso permite demonstrar o fluxo de autenticação real enquanto os gráficos rodam com dados simulados.
+
+Quando o modo simulação está ativo, o header mostra a pill "Modo simulação" em laranja, e o ControlPanel apenas atualiza estado local (não envia escritas). Se as variáveis `VITE_FIREBASE_*` não estiverem preenchidas, o app cai em modo simulação automaticamente — `npm run dev` nunca quebra.
 
 ## Autenticação
 

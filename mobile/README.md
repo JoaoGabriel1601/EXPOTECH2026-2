@@ -42,20 +42,28 @@ Isso cria `icon.png`, `adaptive-icon.png`, `splash.png`, `favicon.png` e `notifi
 
 ### 2) Configurar variáveis (opcional — modo mock funciona sem)
 
-Edite [app.json](app.json) → `expo.extra` com suas chaves do Firebase:
+Caminho recomendado: copie `.env.example` → `.env` e preencha (o `.env` é gitignored):
 
-```json
-"extra": {
-  "firebaseApiKey": "AIza...",
-  "firebaseAuthDomain": "...firebaseapp.com",
-  "firebaseProjectId": "...",
-  "firebaseDatabaseUrl": "https://...firebaseio.com",
-  "useMockData": false,
-  "skipAuth": false
-}
+```bash
+cp .env.example .env
 ```
 
-> Default: `"useMockData": false` (conexão real). Coloque `true` se quiser forçar simulação mesmo com chaves preenchidas. Se as chaves estiverem com placeholder (`REPLACE_WITH_*`) ou vazias, o app cai em mock automaticamente — não quebra.
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY=AIza...
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
+EXPO_PUBLIC_FIREBASE_DATABASE_URL=https://...firebaseio.com
+EXPO_PUBLIC_USE_MOCK_DATA=true   # true = dashboard mock, login real
+EXPO_PUBLIC_SKIP_AUTH=false
+```
+
+Alternativa: editar [app.json](app.json) → `expo.extra` (vai pro git, então só faça se quiser comprometer as chaves).
+
+> **Login real + dashboard mock:** preencha as chaves Firebase e deixe `EXPO_PUBLIC_USE_MOCK_DATA=true`. A tela de login vai usar Firebase Auth de verdade, e os dados do dashboard são gerados localmente.
+>
+> **Login + dashboard reais:** preencha as chaves e use `EXPO_PUBLIC_USE_MOCK_DATA=false`. Exige `/sensores` populado no Realtime Database (ESP32 publicando).
+>
+> **Sem chaves:** o app cai em mock total (login bypass + dashboard mock) — útil pra rodar sem configurar nada.
 
 ---
 
@@ -96,6 +104,47 @@ Sai um link tipo `expo.dev/.../build/abc123` — baixe o `.apk`, transfira para 
 
 ```bash
 npm run build:aab
+```
+
+---
+
+## 🔄 Atualizações OTA (sem rebuildar o APK)
+
+Toda mudança que mexe **só em JS / assets / imagens** pode ir pro celular sem refazer o APK. O app vem com `expo-updates` e checa atualização ao abrir e ao voltar do background. Quando há um update novo, ele baixa em background e mostra um banner "Aplicar" — tocar reinicia o app na nova versão.
+
+> Mudanças que **exigem novo APK**: novas dependências nativas, mudança de versão (`version` no `app.json`), permissões, plugins do Expo, Kotlin/Gradle config, ícones/splash gerados. JS, JSX, CSS, hooks, mock data, regras, gráficos → vão por OTA.
+
+### Como o canal está configurado
+
+Tanto o APK do `npm run build:apk` quanto o AAB do `npm run build:aab` ouvem o canal **`production`**. Isso simplifica: você publica uma vez e atinge os dois.
+
+### Publicar uma atualização (caso comum)
+
+```bash
+cd mobile
+npm run update -- --message "ajuste no painel de controle"
+```
+
+O comando empacota o JS atual, sobe pra Expo e qualquer APK/AAB instalado baixa o update no próximo open. Você recebe um link `expo.dev/.../updates/abc123` pra acompanhar.
+
+### Canal `preview` (opcional)
+
+Se quiser testar um update sem afetar o APK em uso, primeiro builda um APK no profile `development` (que ouve `development`) ou crie um profile `staging` apontando pro canal `preview`. Pra publicar nesse canal de teste:
+
+```bash
+npm run update:preview -- --message "teste isolado"
+```
+
+### Como funciona o `runtimeVersion`
+
+`runtimeVersion` está em `appVersion` policy: o cliente só aceita updates da mesma `version` do `app.json` em que foi compilado. Isso evita que um update OTA com código incompatível (ex: nova lib nativa) seja entregue. Quando você bumpa `version` (ex: 1.0.0 → 1.1.0), faz um build novo — updates em 1.0.0 continuam servindo só pra 1.0.0.
+
+### Rollback rápido
+
+Se a atualização quebrou algo:
+
+```bash
+eas update:rollback --branch production
 ```
 
 ---

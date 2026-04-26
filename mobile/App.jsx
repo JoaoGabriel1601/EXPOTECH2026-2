@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext";
 import { AppNavigator } from "./src/navigation/AppNavigator";
+import { UpdateBanner } from "./src/components/UpdateBanner";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -27,6 +28,7 @@ function ThemedShell() {
       <SafeAreaProvider>
         <StatusBar style={resolvedMode === "dark" ? "light" : "dark"} />
         <AppNavigator />
+        <UpdateBanner />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
