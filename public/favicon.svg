@@ -27,7 +27,7 @@
   <rect width="1024" height="1024" rx="200" fill="url(#bgGrad)"/>
 
   <g transform="translate(512 512)">
-    <path d="M -300 0 A 300 300 0 0 1 300 0" stroke="#a855f7" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <circle r="300" stroke="#a855f7" stroke-width="14" fill="none"/>
     <line x1="0" y1="-322" x2="0" y2="-292" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
   </g>
 

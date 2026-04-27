@@ -37,7 +37,7 @@ function HeaderComponent({
   return (
     <View style={styles.header}>
       <View style={styles.brandRow}>
-        <Logo size={64} withBackground withText />
+        <Logo size={64} withBackground />
         <View style={styles.brandText}>
           <Text style={styles.subtitle} numberOfLines={1}>
             {user?.email

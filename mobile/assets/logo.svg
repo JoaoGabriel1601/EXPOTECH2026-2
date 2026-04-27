@@ -5,7 +5,6 @@
       <stop offset="100%" stop-color="#0a0e15"/>
     </linearGradient>
 
-    <!-- Snowflake arm template: spine pointing south (+Y) with branches and tip fork -->
     <g id="armBlue" stroke="#38bdf8" stroke-linecap="round" fill="none">
       <line x1="0" y1="8" x2="0" y2="230" stroke-width="13"/>
       <line x1="0" y1="80" x2="44" y2="120" stroke-width="11"/>
@@ -26,15 +25,10 @@
     </g>
   </defs>
 
-  <!-- Rounded square background -->
   <rect width="1024" height="1024" rx="200" ry="200" fill="url(#bgGrad)"/>
 
-  <!-- Purple gauge arc on top -->
-  <g transform="translate(512 500)">
-    <path d="M -300 0 A 300 300 0 0 1 300 0"
-          stroke="#a855f7" stroke-width="14" fill="none" stroke-linecap="round"/>
-
-    <!-- Tick marks every 15° around the half-circle -->
+  <g transform="translate(512 520)">
+    <circle r="300" stroke="#a855f7" stroke-width="14" fill="none"/>
     <g stroke="#a855f7" stroke-width="3" stroke-linecap="round">
       <line x1="-285" y1="0" x2="-312" y2="0"/>
       <line x1="-275" y1="-74" x2="-301" y2="-81"/>
@@ -50,7 +44,6 @@
       <line x1="275" y1="-74" x2="301" y2="-81"/>
       <line x1="285" y1="0" x2="312" y2="0"/>
     </g>
-    <!-- Smaller intermediate ticks (subtle) -->
     <g stroke="#a855f7" stroke-width="2" stroke-linecap="round" opacity="0.7">
       <line x1="-282" y1="-37" x2="-296" y2="-39"/>
       <line x1="-263" y1="-110" x2="-276" y2="-115"/>
@@ -65,14 +58,11 @@
       <line x1="263" y1="-110" x2="276" y2="-115"/>
       <line x1="282" y1="-37" x2="296" y2="-39"/>
     </g>
-
-    <!-- White pointer at apex -->
     <line x1="0" y1="-322" x2="0" y2="-292"
           stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
   </g>
 
-  <!-- Snowflake — 6 arms at ±30°, ±90°, ±150° from vertical (no vertical arms; thermometer occupies that axis) -->
-  <g transform="translate(512 500)">
+  <g transform="translate(512 520)">
     <use href="#armBlue" transform="rotate(30)"/>
     <use href="#armBlue" transform="rotate(90)"/>
     <use href="#armBlue" transform="rotate(150)"/>
@@ -81,50 +71,16 @@
     <use href="#armOrange" transform="rotate(330)"/>
   </g>
 
-  <!-- Thermometer (vertical, overlays the snowflake center) -->
-  <g transform="translate(512 500)">
-    <!-- Outer tube outlined in orange neon -->
+  <g transform="translate(512 520)">
     <path d="M -28 -210 Q -28 -222 -16 -222 L 16 -222 Q 28 -222 28 -210 L 28 105 A 50 50 0 1 1 -28 105 Z"
           stroke="#fb923c" stroke-width="12" fill="#0a0e15" stroke-linejoin="round"/>
-    <!-- Mercury column -->
     <rect x="-12" y="-185" width="24" height="325" rx="12" fill="#fb923c"/>
-    <!-- Bulb -->
     <circle cx="0" cy="150" r="34" fill="#fb923c"/>
   </g>
 
-  <!-- Center green leaf circle -->
-  <g transform="translate(512 500)">
+  <g transform="translate(512 520)">
     <circle r="22" fill="#0a0e15" stroke="#22c55e" stroke-width="3"/>
     <path d="M -10 8 Q -2 -14 14 -7 Q 14 9 -2 13 Z" fill="#22c55e"/>
     <line x1="-10" y1="8" x2="6" y2="-3" stroke="#0a0e15" stroke-width="1.6" stroke-linecap="round"/>
-  </g>
-
-  <!-- "climacontrol" text with NC recycle in place of 'o' -->
-  <g transform="translate(512 905)">
-    <!-- Left half: "climac" — anchor end at gap start -->
-    <text x="-46" y="0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-          font-size="118" font-weight="600" fill="#cbd5e1" letter-spacing="-3" text-anchor="end">climac</text>
-    <!-- Right half: "ntrol" — anchor start at gap end -->
-    <text x="46" y="0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-          font-size="118" font-weight="600" fill="#cbd5e1" letter-spacing="-3" text-anchor="start">ntrol</text>
-
-    <!-- NC recycle circle at center (replaces 'o') -->
-    <g transform="translate(0 -36)">
-      <!-- Top arrow (green, going CW from west to east) -->
-      <path d="M -42 -10 A 44 44 0 0 1 32 -28"
-            stroke="#22c55e" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <polyline points="36,-32 30,-22 22,-26"
-                stroke="#22c55e" stroke-width="5" fill="none"
-                stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- Bottom arrow (blue, going CW from east to west) -->
-      <path d="M 42 10 A 44 44 0 0 1 -32 28"
-            stroke="#3b82f6" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <polyline points="-36,32 -30,22 -22,26"
-                stroke="#3b82f6" stroke-width="5" fill="none"
-                stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- "CN" text -->
-      <text y="14" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-            font-size="36" font-weight="700" fill="#cbd5e1" text-anchor="middle">CN</text>
-    </g>
   </g>
 </svg>

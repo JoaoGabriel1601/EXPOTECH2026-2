@@ -27,9 +27,8 @@
 
   <rect width="1024" height="1024" rx="200" ry="200" fill="url(#bgGrad)"/>
 
-  <g transform="translate(512 500)">
-    <path d="M -300 0 A 300 300 0 0 1 300 0"
-          stroke="#a855f7" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <g transform="translate(512 520)">
+    <circle r="300" stroke="#a855f7" stroke-width="14" fill="none"/>
     <g stroke="#a855f7" stroke-width="3" stroke-linecap="round">
       <line x1="-285" y1="0" x2="-312" y2="0"/>
       <line x1="-275" y1="-74" x2="-301" y2="-81"/>
@@ -63,7 +62,7 @@
           stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
   </g>
 
-  <g transform="translate(512 500)">
+  <g transform="translate(512 520)">
     <use href="#armBlue" transform="rotate(30)"/>
     <use href="#armBlue" transform="rotate(90)"/>
     <use href="#armBlue" transform="rotate(150)"/>
@@ -72,38 +71,16 @@
     <use href="#armOrange" transform="rotate(330)"/>
   </g>
 
-  <g transform="translate(512 500)">
+  <g transform="translate(512 520)">
     <path d="M -28 -210 Q -28 -222 -16 -222 L 16 -222 Q 28 -222 28 -210 L 28 105 A 50 50 0 1 1 -28 105 Z"
           stroke="#fb923c" stroke-width="12" fill="#0a0e15" stroke-linejoin="round"/>
     <rect x="-12" y="-185" width="24" height="325" rx="12" fill="#fb923c"/>
     <circle cx="0" cy="150" r="34" fill="#fb923c"/>
   </g>
 
-  <g transform="translate(512 500)">
+  <g transform="translate(512 520)">
     <circle r="22" fill="#0a0e15" stroke="#22c55e" stroke-width="3"/>
     <path d="M -10 8 Q -2 -14 14 -7 Q 14 9 -2 13 Z" fill="#22c55e"/>
     <line x1="-10" y1="8" x2="6" y2="-3" stroke="#0a0e15" stroke-width="1.6" stroke-linecap="round"/>
-  </g>
-
-  <g transform="translate(512 905)">
-    <text x="-46" y="0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-          font-size="118" font-weight="600" fill="#cbd5e1" letter-spacing="-3" text-anchor="end">climac</text>
-    <text x="46" y="0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-          font-size="118" font-weight="600" fill="#cbd5e1" letter-spacing="-3" text-anchor="start">ntrol</text>
-
-    <g transform="translate(0 -36)">
-      <path d="M -42 -10 A 44 44 0 0 1 32 -28"
-            stroke="#22c55e" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <polyline points="36,-32 30,-22 22,-26"
-                stroke="#22c55e" stroke-width="5" fill="none"
-                stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M 42 10 A 44 44 0 0 1 -32 28"
-            stroke="#3b82f6" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <polyline points="-36,32 -30,22 -22,26"
-                stroke="#3b82f6" stroke-width="5" fill="none"
-                stroke-linecap="round" stroke-linejoin="round"/>
-      <text y="14" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-            font-size="36" font-weight="700" fill="#cbd5e1" text-anchor="middle">CN</text>
-    </g>
   </g>
 </svg>
