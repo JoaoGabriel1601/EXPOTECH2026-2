@@ -37,15 +37,29 @@ function MetricCardComponent({ icon, label, value, unit, sub, color }) {
             <Ionicons name={icon} size={16} color={color} />
           </View>
         ) : null}
-        <Text style={styles.label}>{label}</Text>
+        <Text style={styles.label} numberOfLines={1}>
+          {label}
+        </Text>
       </View>
       <View style={styles.valueRow}>
-        <Animated.Text style={[styles.value, { transform: [{ scale }] }]}>
+        <Animated.Text
+          style={[styles.value, { transform: [{ scale }] }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           {value}
         </Animated.Text>
-        {unit ? <Text style={styles.unit}>{unit}</Text> : null}
+        {unit ? (
+          <Text style={styles.unit} numberOfLines={1}>
+            {unit}
+          </Text>
+        ) : null}
       </View>
-      {sub ? <Text style={styles.sub}>{sub}</Text> : null}
+      {sub ? (
+        <Text style={styles.sub} numberOfLines={1}>
+          {sub}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -54,13 +68,13 @@ const makeStyles = (theme) =>
   StyleSheet.create({
     card: {
       flex: 1,
-      minWidth: "47%",
       backgroundColor: theme.surface,
       borderRadius: radius.lg,
       padding: spacing.md,
       borderWidth: 1,
       borderColor: theme.border,
       overflow: "hidden",
+      justifyContent: "space-between",
     },
     bar: {
       position: "absolute",
@@ -73,7 +87,6 @@ const makeStyles = (theme) =>
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.sm,
-      marginBottom: spacing.sm,
       marginTop: 4,
     },
     iconWrap: {
@@ -91,9 +104,9 @@ const makeStyles = (theme) =>
       flex: 1,
     },
     valueRow: { flexDirection: "row", alignItems: "baseline", gap: 4 },
-    value: { fontSize: 28, fontWeight: "700", color: theme.text },
+    value: { fontSize: 28, fontWeight: "700", color: theme.text, flexShrink: 1 },
     unit: { fontSize: 14, color: theme.textMuted, fontWeight: "600" },
-    sub: { ...typography.caption, color: theme.textMuted, marginTop: 2 },
+    sub: { ...typography.caption, color: theme.textMuted },
   });
 
 export const MetricCard = memo(MetricCardComponent);
