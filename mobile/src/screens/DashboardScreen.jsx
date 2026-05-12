@@ -18,6 +18,7 @@ import { ControlPanel } from "../components/ControlPanel";
 import { SystemStatus } from "../components/SystemStatus";
 import { RulesTable } from "../components/RulesTable";
 import { EventLog } from "../components/EventLog";
+import { AIInsightsCard } from "../components/AIInsightsCard";
 import { TemperatureChart } from "../components/charts/TemperatureChart";
 import { OccupancyChart } from "../components/charts/OccupancyChart";
 import { HumidityChart } from "../components/charts/HumidityChart";
@@ -29,6 +30,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import {
   CARD_COLORS,
   CARD_COLORS_EFFICIENCY,
+  AI_CARD_COLOR,
   HUMIDITY_THRESHOLDS,
   OCCUPANCY_THRESHOLDS,
   PERIOD_OPTIONS,
@@ -82,6 +84,7 @@ export function DashboardScreen() {
     setAcOn,
     setTargetTemp,
     setManualMode,
+    ai,
   } = useSensorData();
 
   useNotifications({ live, acOn });
@@ -203,7 +206,17 @@ export function DashboardScreen() {
               label="Temp. alvo"
               value={live.tempAlvo > 0 ? live.tempAlvo : "—"}
               unit={live.tempAlvo > 0 ? "°C" : ""}
-              sub={live.tempAlvo > 0 ? "Controle ativo" : "Sem alvo"}
+              sub={
+                live.tempAlvo === 0
+                  ? "Sem alvo"
+                  : manualMode
+                    ? "Modo manual"
+                    : ai?.isAIActive
+                      ? "IA"
+                      : ai?.isLoadingAI
+                        ? "Carregando IA..."
+                        : "Regras fixas"
+              }
               color={CARD_COLORS.tempAlvo}
             />
           </View>
@@ -228,6 +241,33 @@ export function DashboardScreen() {
               }
               color={CARD_COLORS_EFFICIENCY}
             />
+          </View>
+          <View style={styles.metricRow}>
+            <MetricCard
+              icon="sparkles"
+              label="IA Clima"
+              value={
+                ai?.isLoadingAI
+                  ? "..."
+                  : ai?.tempAlvoIA === null || ai?.tempAlvoIA === undefined
+                    ? "—"
+                    : ai.tempAlvoIA === 0
+                      ? "Off"
+                      : ai.tempAlvoIA
+              }
+              unit={ai?.tempAlvoIA > 0 ? "°C" : ""}
+              sub={
+                ai?.isLoadingAI
+                  ? "Carregando modelo..."
+                  : ai?.isRecalculating
+                    ? "Recalculando..."
+                    : ai?.isFallback
+                      ? "Fallback ativo"
+                      : `Confiança ${ai?.confidence ?? "—"}`
+              }
+              color={AI_CARD_COLOR}
+            />
+            <View style={{ flex: 1 }} />
           </View>
         </View>
       ) : (
@@ -300,6 +340,9 @@ export function DashboardScreen() {
               acOn={acOn}
               connectionStatus={connectionStatus}
             />
+
+            <SectionTitle>IA Clima</SectionTitle>
+            <AIInsightsCard ai={ai} live={live} />
 
             <SectionTitle>Eventos recentes</SectionTitle>
             <Panel>

@@ -26,4 +26,10 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    files: ['src/ai/generateDataset.js', 'src/ai/trainModel.js', 'src/ai/exportWeights.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ])

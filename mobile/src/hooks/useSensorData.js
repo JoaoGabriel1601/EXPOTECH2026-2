@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ref, onValue, off, update, push } from "firebase/database";
+import { ref, onValue, off, update, push, set } from "firebase/database";
 import { db, useMockData } from "../config/firebase";
 import { generateHistory, nextLiveSample } from "../utils/mockData";
 import {
   UPDATE_INTERVAL_MS,
   HISTORY_APPEND_MS,
   HISTORY_MAX_POINTS,
+  AI_MODEL_VERSION,
+  AI_UPDATE_THRESHOLD_C,
 } from "../constants";
+import { useClimateAI } from "./useClimateAI";
 
 const CONTROLE_PATH = "controle";
 const EVENTOS_PATH = "eventos";
+const IA_PATH = "ia";
 
 export function useSensorData() {
   const initialHistory = useMockData ? generateHistory() : [];
@@ -30,9 +34,18 @@ export function useSensorData() {
   const manualModeRef = useRef(manualMode);
   const manualTargetRef = useRef(manualTarget);
   const lastHistoryAppendRef = useRef(Date.now());
+  const lastIAWriteRef = useRef(null);
   acOnRef.current = acOn;
   manualModeRef.current = manualMode;
   manualTargetRef.current = manualTarget;
+
+  const ai = useClimateAI({
+    pessoas: live?.pessoas,
+    tempInt: live?.tempInt,
+    tempExt: live?.tempExt,
+    manualMode,
+    enabled: Boolean(live),
+  });
 
   useEffect(() => {
     if (useMockData) {
@@ -83,6 +96,8 @@ export function useSensorData() {
             tempInt: val.temp_interna ?? 0,
             tempExt: val.temp_externa ?? 0,
             tempAlvo: val.temp_alvo ?? 0,
+            tempAlvoIA: val.temp_alvo_ia ?? null,
+            iaAtiva: Boolean(val.ia_ativa),
             umidInt: val.umid_interna ?? 0,
             umidExt: val.umid_externa ?? 0,
           });
@@ -137,6 +152,54 @@ export function useSensorData() {
       setAcOnState(live.tempAlvo > 0);
     }
   }, [live, manualMode]);
+
+  useEffect(() => {
+    if (!ai.isAIActive || ai.tempAlvoIA === null) return;
+    if (manualMode) return;
+    if (!live) return;
+
+    const current = live.tempAlvo ?? 0;
+    const diff = Math.abs(current - ai.tempAlvoIA);
+
+    if (useMockData) {
+      if (diff < AI_UPDATE_THRESHOLD_C && current !== 0 && ai.tempAlvoIA !== 0) return;
+      setLive((prev) =>
+        prev
+          ? { ...prev, tempAlvo: ai.tempAlvoIA, tempAlvoIA: ai.tempAlvoIA, iaAtiva: true }
+          : prev
+      );
+      return;
+    }
+
+    if (diff < AI_UPDATE_THRESHOLD_C && current !== 0 && ai.tempAlvoIA !== 0) return;
+
+    const lastWrite = lastIAWriteRef.current;
+    if (lastWrite === ai.tempAlvoIA) return;
+    lastIAWriteRef.current = ai.tempAlvoIA;
+
+    if (!db) return;
+    update(ref(db, CONTROLE_PATH), {
+      temp_alvo: ai.tempAlvoIA,
+      ac_ligado: ai.tempAlvoIA > 0,
+      ia_ativa: true,
+      ia_ultimo_calculo: Date.now(),
+    }).catch((err) => console.warn("Falha ao escrever IA no /controle:", err));
+
+    set(ref(db, `${IA_PATH}/ultimo_ajuste`), {
+      timestamp: Date.now(),
+      inputs: {
+        pessoas: live.pessoas,
+        temp_interna: live.tempInt,
+        temp_externa: live.tempExt,
+      },
+      output: { temp_alvo: ai.tempAlvoIA },
+      regra_fixa_seria: ai.ruleTempAlvo,
+      diferenca: ai.tempAlvoIA - (ai.ruleTempAlvo ?? 0),
+      confianca: ai.confidence,
+    }).catch((err) => console.warn("Falha ao registrar IA:", err));
+
+    set(ref(db, `${IA_PATH}/modelo_versao`), AI_MODEL_VERSION).catch(() => {});
+  }, [ai.tempAlvoIA, ai.isAIActive, ai.ruleTempAlvo, ai.confidence, manualMode, live]);
 
   const writeFirebase = useCallback(async (patch, eventType, eventPayload) => {
     if (!db) return { ok: false, error: new Error("Firebase indisponível") };
@@ -217,5 +280,6 @@ export function useSensorData() {
     setAcOn,
     setTargetTemp,
     setManualMode,
+    ai,
   };
 }

@@ -4,6 +4,7 @@ import {
   HISTORY_INTERVAL_MS,
   calcTargetTemp,
 } from "../constants";
+import { predictTargetTemp, isAIReady } from "../ai/climateAI";
 
 function formatTime(date) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(
@@ -30,10 +31,19 @@ function nextOccupancy(prev, target) {
   return Math.max(0, prev + lerp + noise);
 }
 
-function buildSample({ timestamp, people, i }) {
+function chooseTarget(people, tempInt, tempExt) {
+  if (isAIReady()) {
+    return predictTargetTemp(people, tempInt, tempExt);
+  }
+  return calcTargetTemp(people, tempExt);
+}
+
+function buildSample({ timestamp, people, i, prevTempInt }) {
   const externalBase = 28;
   const tempExt = externalBase + Math.sin(i / 12) * 4 + Math.random() * 1.5;
-  const targetTemp = calcTargetTemp(people, tempExt);
+  const tempIntEstimate =
+    prevTempInt ?? (people > 0 ? 23 + Math.random() : tempExt - 2 + Math.random());
+  const targetTemp = chooseTarget(people, tempIntEstimate, tempExt);
   const tempInt =
     people > 0
       ? targetTemp + Math.random() * 2 - 0.5
@@ -56,13 +66,16 @@ export function generateHistory(hours = HISTORY_HOURS) {
   const total = hours * HISTORY_SAMPLES_PER_HOUR;
   const startDate = new Date(now - (total - 1) * HISTORY_INTERVAL_MS);
   let people = targetOccupancy(startDate);
+  let prevTempInt = null;
 
   for (let i = 0; i < total; i++) {
     const timestamp = now - (total - 1 - i) * HISTORY_INTERVAL_MS;
     const date = new Date(timestamp);
     const target = targetOccupancy(date);
     people = nextOccupancy(people, target);
-    data.push(buildSample({ timestamp, people, i }));
+    const sample = buildSample({ timestamp, people, i, prevTempInt });
+    prevTempInt = sample.tempInt;
+    data.push(sample);
   }
   return data;
 }
@@ -75,7 +88,7 @@ export function nextLiveSample(prev, override = {}) {
   if (manualMode) {
     ta = manualAcOn ? manualTarget : 0;
   } else {
-    ta = calcTargetTemp(p, te);
+    ta = chooseTarget(p, prev.tempInt ?? te, te);
   }
   const ti =
     ta > 0 ? ta + Math.random() * 1.5 - 0.3 : te - 1 + Math.random();

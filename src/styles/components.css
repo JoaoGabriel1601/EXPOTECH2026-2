@@ -265,3 +265,121 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+.ai-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.ai-panel__header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  border-bottom: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.ai-panel__header:hover {
+  background: color-mix(in srgb, var(--ai-color) 5%, transparent);
+}
+.ai-panel__header[aria-expanded="true"] {
+  border-bottom-color: var(--border);
+}
+.ai-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ai-color);
+}
+.ai-panel__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--label-soft);
+}
+.ai-panel__warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent, #f59e0b);
+}
+.ai-panel__body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ai-panel__row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.ai-panel__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--label);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ai-panel__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ai-panel__value--muted { color: var(--text-muted); }
+.ai-panel__meta {
+  font-size: 12px;
+  color: var(--label-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  line-height: 1.6;
+}
+.ai-panel__meta strong { color: var(--text); font-weight: 600; }
+.ai-panel__recalc {
+  color: var(--ai-color);
+  animation: aiPulse 1.4s ease-in-out infinite;
+}
+@keyframes aiPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.ai-panel__inputs { display: flex; flex-direction: column; gap: 6px; }
+.ai-panel__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.ai-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ai-color) 10%, transparent);
+  color: var(--ai-color);
+  font-weight: 600;
+}
+.ai-panel__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #f97316 10%, transparent);
+  color: #f97316;
+  font-size: 12px;
+}
+.rules-table__ia-divergent {
+  color: #7c3aed;
+  font-weight: 600;
+}

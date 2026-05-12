@@ -1,0 +1,26 @@
+{
+  "features": [
+    "pessoas",
+    "temp_interna",
+    "temp_externa"
+  ],
+  "target": "temp_alvo_ideal",
+  "stats": {
+    "pessoas": {
+      "min": 0,
+      "max": 50
+    },
+    "temp_interna": {
+      "min": 15,
+      "max": 40
+    },
+    "temp_externa": {
+      "min": 15,
+      "max": 45
+    },
+    "temp_alvo_ideal": {
+      "min": 0,
+      "max": 26
+    }
+  }
+}

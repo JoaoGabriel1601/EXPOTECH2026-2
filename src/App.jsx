@@ -8,6 +8,7 @@ import { SystemStatus } from "./components/SystemStatus";
 import { ControlPanel } from "./components/ControlPanel";
 import { EventLog } from "./components/EventLog";
 import { PeriodSelector } from "./components/PeriodSelector";
+import { AIInsightsPanel } from "./components/AIInsightsPanel";
 import {
   PeopleIcon,
   SnowflakeIcon,
@@ -15,6 +16,7 @@ import {
   TargetIcon,
   DropIcon,
   PowerIcon,
+  BrainIcon,
 } from "./components/icons";
 import { useSensorData } from "./hooks/useSensorData";
 import { useAuth } from "./hooks/useAuth";
@@ -22,6 +24,7 @@ import { useMockData } from "./config/firebase";
 import {
   CARD_COLORS,
   CARD_COLORS_EFFICIENCY,
+  AI_CARD_COLOR,
   OCCUPANCY_THRESHOLDS,
   HUMIDITY_THRESHOLDS,
   PERIOD_OPTIONS,
@@ -47,6 +50,11 @@ const ChartHumidity = lazy(() =>
 const ChartAcUsage = lazy(() =>
   import("./components/charts/ChartAcUsage").then((m) => ({
     default: m.ChartAcUsage,
+  }))
+);
+const ChartAIComparison = lazy(() =>
+  import("./components/charts/ChartAIComparison").then((m) => ({
+    default: m.ChartAIComparison,
   }))
 );
 
@@ -99,10 +107,34 @@ export default function App() {
     setAcOn,
     setTargetTemp,
     setManualMode,
+    ai,
   } = useSensorData();
   const [periodId, setPeriodId] = useState("8h");
 
   const acUsage = useMemo(() => computeAcUsage(history), [history]);
+
+  const tempAlvoSub = useMemo(() => {
+    if (!live || live.tempAlvo === 0) return "Sem alvo";
+    if (manualMode) return "Modo manual";
+    if (ai?.isAIActive) {
+      if (ai.lastUpdate) {
+        const secs = Math.round((Date.now() - ai.lastUpdate) / 1000);
+        return `IA · há ${secs}s`;
+      }
+      return "IA · aguardando";
+    }
+    if (ai?.isLoadingAI) return "Carregando IA...";
+    if (ai?.isFallback) return "Regras fixas";
+    return "Controle automático";
+  }, [live, manualMode, ai]);
+
+  const aiComparisonData = useMemo(() => {
+    return history.map((h) => ({
+      ...h,
+      tempAlvoIA: h.tempAlvo,
+      tempAlvoRegra: h.tempAlvo,
+    }));
+  }, [history]);
 
   const filteredHistory = useMemo(() => {
     const period = PERIOD_OPTIONS.find((p) => p.id === periodId);
@@ -249,8 +281,32 @@ export default function App() {
           label="Temp. alvo"
           value={live.tempAlvo > 0 ? live.tempAlvo : "—"}
           unit={live.tempAlvo > 0 ? "°C" : ""}
-          sub={live.tempAlvo > 0 ? "Controle automático" : "Sem alvo"}
+          sub={tempAlvoSub}
           color={CARD_COLORS.tempAlvo}
+        />
+        <MetricCard
+          icon={BrainIcon}
+          label="IA Clima"
+          value={
+            ai?.isLoadingAI
+              ? "..."
+              : ai?.tempAlvoIA === null || ai?.tempAlvoIA === undefined
+                ? "—"
+                : ai.tempAlvoIA === 0
+                  ? "Off"
+                  : ai.tempAlvoIA
+          }
+          unit={ai?.tempAlvoIA > 0 ? "°C" : ""}
+          sub={
+            ai?.isLoadingAI
+              ? "Carregando modelo..."
+              : ai?.isRecalculating
+                ? "Recalculando..."
+                : ai?.isFallback
+                  ? "Fallback ativo"
+                  : `Confiança ${ai?.confidence ?? "—"}`
+          }
+          color={AI_CARD_COLOR}
         />
         <MetricCard
           icon={DropIcon}
@@ -303,6 +359,16 @@ export default function App() {
       <div className="panel panel--chart">
         <Suspense fallback={<ChartFallback />}>
           <ChartAcUsage data={filteredHistory} />
+        </Suspense>
+      </div>
+
+      <SectionTitle>IA vs. regras fixas</SectionTitle>
+      <div className="panel panel--padded">
+        <AIInsightsPanel ai={ai} live={live} />
+      </div>
+      <div className="panel panel--chart">
+        <Suspense fallback={<ChartFallback />}>
+          <ChartAIComparison data={aiComparisonData} />
         </Suspense>
       </div>
 
