@@ -23,6 +23,7 @@ import { TemperatureChart } from "../components/charts/TemperatureChart";
 import { OccupancyChart } from "../components/charts/OccupancyChart";
 import { HumidityChart } from "../components/charts/HumidityChart";
 import { AcUsageChart } from "../components/charts/AcUsageChart";
+import { AIComparisonChart } from "../components/charts/AIComparisonChart";
 import { useSensorData } from "../hooks/useSensorData";
 import { useAuth } from "../hooks/useAuth";
 import { useNotifications } from "../hooks/useNotifications";
@@ -230,20 +231,6 @@ export function DashboardScreen() {
               color={CARD_COLORS.umidInt}
             />
             <MetricCard
-              icon="flash"
-              label="Uso A/C"
-              value={Math.round(acUsage.percent)}
-              unit="%"
-              sub={
-                acUsage.totalHours > 0
-                  ? `${acUsage.hoursOn.toFixed(1)}h em ${acUsage.totalHours.toFixed(1)}h`
-                  : "Coletando..."
-              }
-              color={CARD_COLORS_EFFICIENCY}
-            />
-          </View>
-          <View style={styles.metricRow}>
-            <MetricCard
               icon="sparkles"
               label="IA Clima"
               value={
@@ -267,7 +254,21 @@ export function DashboardScreen() {
               }
               color={AI_CARD_COLOR}
             />
-            <View style={{ flex: 1 }} />
+          </View>
+          <View style={styles.metricRow}>
+            <MetricCard
+              icon="flash"
+              label="Uso A/C"
+              value={Math.round(acUsage.percent)}
+              unit="%"
+              sub={
+                acUsage.totalHours > 0
+                  ? `${acUsage.hoursOn.toFixed(1)}h em ${acUsage.totalHours.toFixed(1)}h`
+                  : "Coletando..."
+              }
+              color={CARD_COLORS_EFFICIENCY}
+              centered
+            />
           </View>
         </View>
       ) : (
@@ -307,6 +308,11 @@ export function DashboardScreen() {
             <SectionTitle>Uso do A/C ao longo do tempo</SectionTitle>
             <Panel>
               <AcUsageChart data={filteredHistory} />
+            </Panel>
+
+            <SectionTitle>IA vs. regra fixa</SectionTitle>
+            <Panel>
+              <AIComparisonChart data={filteredHistory} />
             </Panel>
           </>
         )}

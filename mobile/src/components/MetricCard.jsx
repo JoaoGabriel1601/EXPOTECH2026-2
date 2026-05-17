@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { radius, spacing, typography } from "../utils/theme";
 
-function MetricCardComponent({ icon, label, value, unit, sub, color }) {
+function MetricCardComponent({ icon, label, value, unit, sub, color, centered = false }) {
   const { theme } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const prevValueRef = useRef(value);
@@ -28,6 +28,60 @@ function MetricCardComponent({ icon, label, value, unit, sub, color }) {
   }, [value, scale]);
 
   const styles = makeStyles(theme);
+
+  if (centered) {
+    return (
+      <View style={[styles.card, styles.cardCentered]}>
+        <View style={[styles.bar, { backgroundColor: color }]} />
+        <View style={styles.horizontalRow}>
+          <View style={styles.horizontalSection}>
+            {icon ? (
+              <View
+                style={[
+                  styles.iconWrap,
+                  styles.iconWrapCentered,
+                  { backgroundColor: `${color}22` },
+                ]}
+              >
+                <Ionicons name={icon} size={22} color={color} />
+              </View>
+            ) : null}
+            <Text style={[styles.label, styles.labelCentered]} numberOfLines={1}>
+              {label}
+            </Text>
+          </View>
+          <View style={[styles.horizontalSection, styles.horizontalDivider]}>
+            <View style={[styles.valueRow, styles.valueRowCentered]}>
+              <Animated.Text
+                style={[
+                  styles.value,
+                  styles.valueCentered,
+                  { transform: [{ scale }] },
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {value}
+              </Animated.Text>
+              {unit ? (
+                <Text style={[styles.unit, styles.unitCentered]} numberOfLines={1}>
+                  {unit}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+          <View style={styles.horizontalSection}>
+            {sub ? (
+              <Text style={[styles.sub, styles.subCentered]} numberOfLines={2}>
+                {sub}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card}>
       <View style={[styles.bar, { backgroundColor: color }]} />
@@ -107,6 +161,38 @@ const makeStyles = (theme) =>
     value: { fontSize: 28, fontWeight: "700", color: theme.text, flexShrink: 1 },
     unit: { fontSize: 14, color: theme.textMuted, fontWeight: "600" },
     sub: { ...typography.caption, color: theme.textMuted },
+    cardCentered: {
+      justifyContent: "center",
+      paddingVertical: spacing.lg,
+    },
+    horizontalRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    horizontalSection: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+    },
+    horizontalDivider: {
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: theme.border,
+    },
+    iconWrapCentered: { width: 36, height: 36, borderRadius: radius.md },
+    labelCentered: {
+      flex: 0,
+      textAlign: "center",
+      fontSize: 12,
+      letterSpacing: 0.6,
+    },
+    valueRowCentered: { justifyContent: "center", alignItems: "baseline" },
+    valueCentered: { fontSize: 36, lineHeight: 42 },
+    unitCentered: { fontSize: 16 },
+    subCentered: { textAlign: "center", fontSize: 13, lineHeight: 17 },
   });
 
 export const MetricCard = memo(MetricCardComponent);
