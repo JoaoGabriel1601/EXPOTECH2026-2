@@ -162,6 +162,13 @@ export function useSensorData() {
     const diff = Math.abs(current - ai.tempAlvoIA);
 
     if (useMockData) {
+      if (
+        live.tempAlvo === ai.tempAlvoIA &&
+        live.tempAlvoIA === ai.tempAlvoIA &&
+        live.iaAtiva
+      ) {
+        return;
+      }
       if (diff < AI_UPDATE_THRESHOLD_C && current !== 0 && ai.tempAlvoIA !== 0) return;
       setLive((prev) =>
         prev

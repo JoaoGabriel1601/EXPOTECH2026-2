@@ -131,8 +131,8 @@ export default function App() {
   const aiComparisonData = useMemo(() => {
     return history.map((h) => ({
       ...h,
-      tempAlvoIA: h.tempAlvo,
-      tempAlvoRegra: h.tempAlvo,
+      tempAlvoIA: h.tempAlvoIA !== undefined ? h.tempAlvoIA : (h.tempAlvo > 0 ? h.tempAlvo : null),
+      tempAlvoRegra: h.tempAlvoRegra !== undefined ? h.tempAlvoRegra : (h.tempAlvo > 0 ? h.tempAlvo : null),
     }));
   }, [history]);
 
@@ -363,9 +363,7 @@ export default function App() {
       </div>
 
       <SectionTitle>IA vs. regras fixas</SectionTitle>
-      <div className="panel panel--padded">
-        <AIInsightsPanel ai={ai} live={live} />
-      </div>
+      <AIInsightsPanel ai={ai} live={live} />
       <div className="panel panel--chart">
         <Suspense fallback={<ChartFallback />}>
           <ChartAIComparison data={aiComparisonData} />

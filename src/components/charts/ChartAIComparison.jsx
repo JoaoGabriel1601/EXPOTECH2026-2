@@ -33,7 +33,7 @@ function ChartAIComparisonComponent({ data }) {
           tickLine={false}
         />
         <YAxis
-          domain={[14, 28]}
+          domain={[14, 30]}
           tick={axisStyle}
           tickFormatter={(value) => `${value}°C`}
           axisLine={false}
@@ -52,7 +52,7 @@ function ChartAIComparisonComponent({ data }) {
           dot={false}
           activeDot={{ r: 4 }}
           isAnimationActive={false}
-          connectNulls
+          connectNulls={false}
         />
         <Line
           type="stepAfter"
@@ -63,7 +63,7 @@ function ChartAIComparisonComponent({ data }) {
           dot={false}
           strokeDasharray="6 3"
           isAnimationActive={false}
-          connectNulls
+          connectNulls={false}
         />
       </LineChart>
     </ResponsiveContainer>

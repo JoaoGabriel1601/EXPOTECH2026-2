@@ -50,6 +50,8 @@ describe("nextLiveSample", () => {
     tempInt: 22,
     tempExt: 28,
     tempAlvo: 22,
+    tempAlvoIA: 22,
+    tempAlvoRegra: 22,
     umidInt: 50,
     umidExt: 60,
   };
