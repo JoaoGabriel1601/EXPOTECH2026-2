@@ -13,13 +13,24 @@
 //      O ESP32 escreve no RTDB como esse usuário; as Security Rules devem
 //      permitir leitura/escrita autenticada nos caminhos /sensores, /controle,
 //      /historico, /eventos, /ia.
-//   4. Ajuste a pinagem se sua placa for diferente. GPIOs 34/35 são
-//      input-only no ESP32 — bons para o D0 dos TCRT5000.
+//   4. Ajuste a pinagem se sua placa for diferente. No hardware real os
+//      HC-SR04 ligados em 5V geram ECHO em 5V — use divisor (1kΩ + 2kΩ)
+//      para entrar em 3.3V no ESP32, ou alimente o HC-SR04 em 3V3 (a
+//      sensibilidade cai, mas é seguro). No Wokwi alimentamos em 3V3.
 // =============================================================================
 
 // ---------------------- WiFi ------------------------------------------------
-#define WIFI_SSID       "SUA_REDE_WIFI"
-#define WIFI_PASSWORD   "SUA_SENHA_WIFI"
+// No simulador Wokwi a única rede disponível é "Wokwi-GUEST" (aberta). O flag
+// WOKWI_SIMULATION é definido pelo platformio.ini quando compilamos para o
+// simulador — assim mantemos as credenciais reais no firmware de produção
+// sem precisar editar este arquivo antes de cada build.
+#ifdef WOKWI_SIMULATION
+  #define WIFI_SSID     "Wokwi-GUEST"
+  #define WIFI_PASSWORD ""
+#else
+  #define WIFI_SSID     "SUA_REDE_WIFI"
+  #define WIFI_PASSWORD "SUA_SENHA_WIFI"
+#endif
 
 // ---------------------- Firebase --------------------------------------------
 #define FIREBASE_API_KEY       "VITE_FIREBASE_API_KEY"
@@ -28,16 +39,21 @@
 #define FIREBASE_USER_PASSWORD "trocar-essa-senha"
 
 // ---------------------- Pinagem ESP32 ---------------------------------------
-// DHT11 (3 unidades): 1 externo + 2 internos (perto/longe do A/C).
+// DHT (3 unidades): 1 externo + 2 internos (perto/longe do A/C).
+// O tipo é DHT11 no hardware real e DHT22 no Wokwi (única peça disponível);
+// a troca é automática em sensors.cpp via #ifdef WOKWI_SIMULATION.
 #define PIN_DHT_EXT     4
 #define PIN_DHT_INT_1   16  // perto do A/C
 #define PIN_DHT_INT_2   17  // longe do A/C
 
-// TCRT5000 (D0 digital). Par direcional para contagem entrada/saída:
+// HC-SR04 (ultrassônico). Par direcional para contagem entrada/saída:
 //   pessoa entrando: dispara A antes de B
 //   pessoa saindo:   dispara B antes de A
-#define PIN_TCRT_A      34  // sensor externo (porta de fora)
-#define PIN_TCRT_B      35  // sensor interno (porta de dentro)
+// TRIG é saída digital; ECHO é entrada (use divisor 5V→3.3V).
+#define PIN_TRIG_A      18  // sensor externo (porta de fora)
+#define PIN_ECHO_A      19
+#define PIN_TRIG_B      21  // sensor interno (porta de dentro)
+#define PIN_ECHO_B      22
 
 // LED IR de comando para o A/C (driver com transistor recomendado).
 #define PIN_IR_LED      25
@@ -51,10 +67,20 @@
 #define HISTORY_APPEND_MS    60000UL   // push em /historico
 
 // Janela máxima entre A e B para validar um cruzamento (ms).
-#define BEAM_PAIR_WINDOW_MS  1500UL
+#define BEAM_PAIR_WINDOW_MS  2000UL
 
-// Anti-trepidação (debounce) dos TCRT5000.
-#define BEAM_DEBOUNCE_MS     80UL
+// Distância (cm) abaixo da qual consideramos o feixe ultrassônico cortado.
+#define BEAM_DISTANCE_CM     30
+
+// Período mínimo entre disparos do mesmo HC-SR04 (ms). O sensor precisa
+// de ~50ms para que o eco anterior dissipe; abaixo disso aparecem ecos
+// fantasmas e contagens duplicadas.
+#define BEAM_SAMPLE_MS       60UL
+
+// Após validar um cruzamento, ignora novos eventos até que ambos os
+// feixes estejam livres por este tempo. Evita contar a mesma pessoa
+// duas vezes enquanto ela ainda está sob os sensores.
+#define BEAM_RELEASE_MS      1500UL
 
 // ---------------------- Protocolo IR do A/C ---------------------------------
 // IRremoteESP8266 suporta dezenas de marcas. Troque para a sua aqui:

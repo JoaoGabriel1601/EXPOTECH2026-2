@@ -1,0 +1,17 @@
+# Configuração da extensão Wokwi for VS Code.
+#
+# Pré-requisitos:
+#   1. Compilar o firmware com PlatformIO:  pio run -e wokwi
+#      (produz .pio/build/wokwi/firmware.{bin,elf})
+#   2. Instalar a extensão "Wokwi for VS Code" e ativar a licença.
+#   3. Abrir este diagram.json no VS Code e clicar Play.
+#
+# A Wi-Fi gateway do Wokwi dá internet de verdade à VM do ESP32, então o
+# firmware conecta no Firebase RTDB usado pelo dashboard React em src/.
+# O SSID precisa ser "Wokwi-GUEST" (sem senha) — já está plugado via
+# WOKWI_SIMULATION em config.h.
+
+[wokwi]
+version = 1
+firmware = '.pio/build/wokwi/firmware.bin'
+elf      = '.pio/build/wokwi/firmware.elf'

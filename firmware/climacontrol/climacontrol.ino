@@ -125,6 +125,16 @@ void streamTimeoutCallback(bool timeout) {
 //  Firebase setup
 // -----------------------------------------------------------------------------
 void connectFirebase() {
+  // Guard contra placeholders esquecidos. Sem isso, Firebase.ready() nunca
+  // vira true e o boot fica em loop silencioso — péssimo para depurar no
+  // simulador.
+  if (String(FIREBASE_API_KEY) == "VITE_FIREBASE_API_KEY" ||
+      String(FIREBASE_DATABASE_URL).indexOf("seu-projeto") >= 0) {
+    Serial.println("[fb] ERRO: preencha FIREBASE_* em config.h");
+    Serial.println("[fb] sem credenciais, /sensores nao vai ser escrito");
+    return;  // segue o boot pra pelo menos sensores locais e Serial funcionarem
+  }
+
   fbConfig.api_key       = FIREBASE_API_KEY;
   fbConfig.database_url  = FIREBASE_DATABASE_URL;
   fbAuth.user.email      = FIREBASE_USER_EMAIL;
@@ -179,6 +189,7 @@ void pushHistory(int people, const sensors::Reading& env, int alvo) {
 }
 
 void logEvent(const char* type, FirebaseJson* payload = nullptr) {
+  if (!Firebase.ready()) return;  // offline mode (placeholders em config.h)
   FirebaseJson j;
   j.set("type", type);
   j.set("timestamp", (double)nowEpochMs());

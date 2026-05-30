@@ -7,36 +7,66 @@ namespace sensors {
 
 namespace {
 
-DHT dhtExt(PIN_DHT_EXT,   DHT11);
-DHT dhtIn1(PIN_DHT_INT_1, DHT11);
-DHT dhtIn2(PIN_DHT_INT_2, DHT11);
+// Wokwi não tem peça DHT11 — só DHT22. Compilamos no tipo certo conforme
+// o alvo: hardware real usa DHT11 (o que está soldado na bancada), e o
+// simulador usa DHT22 (única opção disponível na biblioteca de partes).
+#ifdef WOKWI_SIMULATION
+  #define DHT_MODEL DHT22
+#else
+  #define DHT_MODEL DHT11
+#endif
+
+DHT dhtExt(PIN_DHT_EXT,   DHT_MODEL);
+DHT dhtIn1(PIN_DHT_INT_1, DHT_MODEL);
+DHT dhtIn2(PIN_DHT_INT_2, DHT_MODEL);
 
 // Cache do último valor válido, para mascarar leituras NaN do DHT11.
 float cacheTempExt = NAN, cacheUmidExt = NAN;
 float cacheTempIn1 = NAN, cacheUmidIn1 = NAN;
 float cacheTempIn2 = NAN, cacheUmidIn2 = NAN;
 
-// ---- Contagem direcional com par TCRT5000 ----------------------------------
-// Estado: nenhuma viga ativa, ou aguardando o segundo sensor após o primeiro.
-enum BeamState { IDLE, WAIT_B_AFTER_A, WAIT_A_AFTER_B };
+// ---- Contagem direcional com par HC-SR04 -----------------------------------
+// Cada sensor mede a distância via pulso ultrassônico. Consideramos o
+// "feixe" cortado quando algo passa a menos de BEAM_DISTANCE_CM. A máquina
+// de estados é equivalente ao .ino de referência (people_counter_hc_sr04):
+//   IDLE → SAW_A se A dispara isolado    → ao ver B: ENTRADA (occ++)
+//   IDLE → SAW_B se B dispara isolado    → ao ver A: SAÍDA  (occ--)
+//   TIMEOUT em SAW_*: descarta o cruzamento (alguém deu meia-volta).
+// Após validar um cruzamento, RELEASE bloqueia novas contagens até que
+// ambos os sensores voltem a ler livre por BEAM_RELEASE_MS.
+enum BeamState { IDLE, SAW_A, SAW_B, RELEASE };
 BeamState beamState = IDLE;
-uint32_t  beamStartMs = 0;
-uint32_t  lastChangeAMs = 0;
-uint32_t  lastChangeBMs = 0;
-int       lastReadA = HIGH;
-int       lastReadB = HIGH;
-int       occ = 0;
+uint32_t  beamStartMs   = 0;
+uint32_t  releaseStartMs = 0;
+uint32_t  lastSampleAMs = 0;
+uint32_t  lastSampleBMs = 0;
+long      lastDistA = 999;
+long      lastDistB = 999;
+int       occ      = 0;
+int       totalIn  = 0;
+int       totalOut = 0;
 
-// Lê o D0 do TCRT5000. Em geral é ativo-baixo: LOW quando o feixe é cortado.
-// Se o seu módulo for invertido, troque o LOW por HIGH abaixo.
-bool beamTriggered(int pin, int& lastRead, uint32_t& lastChangeMs, uint32_t nowMs) {
-  int cur = digitalRead(pin);
-  if (cur != lastRead && (nowMs - lastChangeMs) >= BEAM_DEBOUNCE_MS) {
-    lastChangeMs = nowMs;
-    lastRead = cur;
-    return cur == LOW;  // borda de descida = feixe cortado
-  }
-  return false;
+// Dispara o HC-SR04 e retorna a distância em cm. 999 significa fora de
+// alcance ou eco perdido — tratado como "feixe livre".
+long medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duracao = pulseIn(echoPin, HIGH, 30000UL);
+  if (duracao == 0) return 999;
+  return duracao * 0.0343f / 2.0f;
+}
+
+// Amostra um sensor respeitando BEAM_SAMPLE_MS (50–60ms entre pulsos)
+// para não receber ecos fantasmas do disparo anterior.
+long sampleBeam(int trigPin, int echoPin, uint32_t& lastSampleMs,
+                long& cached, uint32_t nowMs) {
+  if (nowMs - lastSampleMs < BEAM_SAMPLE_MS) return cached;
+  lastSampleMs = nowMs;
+  cached = medirDistancia(trigPin, echoPin);
+  return cached;
 }
 
 float fallback(float fresh, float cached) {
@@ -50,8 +80,12 @@ void begin() {
   dhtIn1.begin();
   dhtIn2.begin();
 
-  pinMode(PIN_TCRT_A, INPUT);
-  pinMode(PIN_TCRT_B, INPUT);
+  pinMode(PIN_TRIG_A, OUTPUT);
+  pinMode(PIN_ECHO_A, INPUT);
+  pinMode(PIN_TRIG_B, OUTPUT);
+  pinMode(PIN_ECHO_B, INPUT);
+  digitalWrite(PIN_TRIG_A, LOW);
+  digitalWrite(PIN_TRIG_B, LOW);
 }
 
 Reading readEnv() {
@@ -82,36 +116,55 @@ Reading readEnv() {
 }
 
 void updateBeams(uint32_t nowMs) {
-  bool aFired = beamTriggered(PIN_TCRT_A, lastReadA, lastChangeAMs, nowMs);
-  bool bFired = beamTriggered(PIN_TCRT_B, lastReadB, lastChangeBMs, nowMs);
+  long d1 = sampleBeam(PIN_TRIG_A, PIN_ECHO_A, lastSampleAMs, lastDistA, nowMs);
+  long d2 = sampleBeam(PIN_TRIG_B, PIN_ECHO_B, lastSampleBMs, lastDistB, nowMs);
+
+  bool a = (d1 < BEAM_DISTANCE_CM);
+  bool b = (d2 < BEAM_DISTANCE_CM);
 
   // Timeout: a primeira viga disparou mas a segunda não veio a tempo →
   // descartamos o cruzamento (provavelmente alguém deu meia-volta).
-  if (beamState != IDLE && (nowMs - beamStartMs) > BEAM_PAIR_WINDOW_MS) {
+  if ((beamState == SAW_A || beamState == SAW_B) &&
+      (nowMs - beamStartMs) > BEAM_PAIR_WINDOW_MS) {
     beamState = IDLE;
   }
 
   switch (beamState) {
     case IDLE:
-      if (aFired) {
-        beamState = WAIT_B_AFTER_A;
+      if (a && !b) {
+        beamState   = SAW_A;
         beamStartMs = nowMs;
-      } else if (bFired) {
-        beamState = WAIT_A_AFTER_B;
+      } else if (b && !a) {
+        beamState   = SAW_B;
         beamStartMs = nowMs;
       }
       break;
 
-    case WAIT_B_AFTER_A:
-      if (bFired) {
-        occ = min(occ + 1, 999);  // entrou: A → B
-        beamState = IDLE;
+    case SAW_A:
+      if (b) {                          // entrou: A → B
+        occ = min(occ + 1, 999);
+        totalIn++;
+        beamState      = RELEASE;
+        releaseStartMs = nowMs;
       }
       break;
 
-    case WAIT_A_AFTER_B:
-      if (aFired) {
-        occ = max(occ - 1, 0);    // saiu: B → A
+    case SAW_B:
+      if (a) {                          // saiu: B → A
+        occ = max(occ - 1, 0);
+        totalOut++;
+        beamState      = RELEASE;
+        releaseStartMs = nowMs;
+      }
+      break;
+
+    case RELEASE:
+      // Espera ambos os feixes liberarem por BEAM_RELEASE_MS antes de
+      // voltar a contar. Garante que a mesma pessoa não vire duas
+      // contagens enquanto ainda está sob os sensores.
+      if (a || b) {
+        releaseStartMs = nowMs;
+      } else if (nowMs - releaseStartMs >= BEAM_RELEASE_MS) {
         beamState = IDLE;
       }
       break;
@@ -120,5 +173,7 @@ void updateBeams(uint32_t nowMs) {
 
 int  occupancy()           { return occ; }
 void setOccupancy(int v)   { occ = constrain(v, 0, 999); }
+int  totalEntries()        { return totalIn; }
+int  totalExits()          { return totalOut; }
 
 }  // namespace sensors

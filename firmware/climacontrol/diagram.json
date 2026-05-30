@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "author": "ClimaControl PI",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+
+    { "type": "wokwi-dht22", "id": "dhtExt", "top": -180, "left": 220,
+      "attrs": { "temperature": "31", "humidity": "55" } },
+    { "type": "wokwi-dht22", "id": "dhtIn1", "top": -60,  "left": 220,
+      "attrs": { "temperature": "24", "humidity": "60" } },
+    { "type": "wokwi-dht22", "id": "dhtIn2", "top":  60,  "left": 220,
+      "attrs": { "temperature": "25", "humidity": "58" } },
+
+    { "type": "wokwi-hc-sr04", "id": "srA", "top": 200, "left": 220,
+      "attrs": { "distance": "200" } },
+    { "type": "wokwi-hc-sr04", "id": "srB", "top": 320, "left": 220,
+      "attrs": { "distance": "200" } },
+
+    { "type": "wokwi-led", "id": "ledIR",     "top": -180, "left": -180,
+      "attrs": { "color": "red",  "label": "IR" } },
+    { "type": "wokwi-led", "id": "ledStatus", "top": -100, "left": -180,
+      "attrs": { "color": "blue", "label": "WiFi" } },
+
+    { "type": "wokwi-resistor", "id": "rIR",  "top": -120, "left": -100,
+      "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "rSt",  "top": -40,  "left": -100,
+      "attrs": { "value": "220" } }
+  ],
+
+  "connections": [
+    [ "dhtExt:VCC", "esp:3V3", "red",    [] ],
+    [ "dhtExt:GND", "esp:GND.1", "black", [] ],
+    [ "dhtExt:SDA", "esp:D4",   "green",  [] ],
+
+    [ "dhtIn1:VCC", "esp:3V3", "red",    [] ],
+    [ "dhtIn1:GND", "esp:GND.1", "black", [] ],
+    [ "dhtIn1:SDA", "esp:D16",  "green",  [] ],
+
+    [ "dhtIn2:VCC", "esp:3V3", "red",    [] ],
+    [ "dhtIn2:GND", "esp:GND.1", "black", [] ],
+    [ "dhtIn2:SDA", "esp:D17",  "green",  [] ],
+
+    [ "srA:VCC",  "esp:3V3",  "red",    [] ],
+    [ "srA:GND",  "esp:GND.2", "black", [] ],
+    [ "srA:TRIG", "esp:D18",  "orange", [] ],
+    [ "srA:ECHO", "esp:D19",  "yellow", [] ],
+
+    [ "srB:VCC",  "esp:3V3",  "red",    [] ],
+    [ "srB:GND",  "esp:GND.2", "black", [] ],
+    [ "srB:TRIG", "esp:D21",  "orange", [] ],
+    [ "srB:ECHO", "esp:D22",  "yellow", [] ],
+
+    [ "ledIR:A",     "rIR:1",       "red",   [] ],
+    [ "rIR:2",       "esp:D25",     "red",   [] ],
+    [ "ledIR:C",     "esp:GND.3",   "black", [] ],
+
+    [ "ledStatus:A", "rSt:1",       "blue",  [] ],
+    [ "rSt:2",       "esp:D2",      "blue",  [] ],
+    [ "ledStatus:C", "esp:GND.3",   "black", [] ]
+  ],
+
+  "dependencies": {}
+}
