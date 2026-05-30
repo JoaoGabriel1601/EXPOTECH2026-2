@@ -10,6 +10,7 @@ import {
   AI_UPDATE_THRESHOLD_C,
 } from "../constants";
 import { useClimateAI } from "./useClimateAI";
+import { api, apiEnabled } from "../services/apiClient";
 
 const CONTROLE_PATH = "controle";
 const EVENTOS_PATH = "eventos";
@@ -209,6 +210,18 @@ export function useSensorData() {
   }, [ai.tempAlvoIA, ai.isAIActive, ai.ruleTempAlvo, ai.confidence, manualMode, live]);
 
   const writeFirebase = useCallback(async (patch, eventType, eventPayload) => {
+    // Caminho preferencial: API REST. O gateway grava em /controle E registra
+    // o evento de auditoria, então aqui não duplicamos o push em /eventos.
+    if (apiEnabled) {
+      try {
+        await api.patchControle(patch);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err };
+      }
+    }
+
+    // Fallback: escrita direta no Firebase (quando VITE_API_URL não está definida).
     if (!db) return { ok: false, error: new Error("Firebase indisponível") };
     try {
       await update(ref(db, CONTROLE_PATH), patch);
