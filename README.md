@@ -64,6 +64,20 @@ npm run test:watch
 
 ## Arquitetura
 
+Monorepo com quatro frentes:
+
+```
+.
+├── src/          dashboard web (React 19 + Vite)
+├── api/          REST API (Express + Firebase) — deploy no Render
+├── mobile/       app Android (Expo + React Native)
+├── firmware/     ESP32 (Arduino/PlatformIO + Wokwi)
+├── public/       estáticos + modelo de IA exportado (ai-model/)
+└── docs/         documentação de apresentação e deploy
+```
+
+### `src/` (web)
+
 ```
 src/
 ├── App.jsx                   composição do dashboard
@@ -72,6 +86,7 @@ src/
 │   └── firebase.js           inicialização (carrega só se !mock)
 ├── components/
 │   ├── Header.jsx
+│   ├── Login.jsx
 │   ├── MetricCard.jsx
 │   ├── StatusPill.jsx
 │   ├── SectionTitle.jsx
@@ -82,24 +97,51 @@ src/
 │   ├── EventLog.jsx
 │   ├── RulesTable.jsx
 │   ├── SystemStatus.jsx
+│   ├── AIInsightsPanel.jsx   recomendações do modelo de IA
 │   ├── icons.jsx             ícones SVG inline
 │   └── charts/
+│       ├── index.js
 │       ├── ChartTemperature.jsx
 │       ├── ChartOccupancy.jsx
-│       └── ChartHumidity.jsx
+│       ├── ChartHumidity.jsx
+│       ├── ChartAcUsage.jsx
+│       └── ChartAIComparison.jsx
 ├── hooks/
 │   ├── useSensorData.js      leitura real-time + fallback mock + ações de controle
 │   ├── useEventLog.js        log de eventos
+│   ├── useClimateAI.js       inferência do modelo de IA
 │   └── useAuth.js            autenticação Firebase (email/senha)
+├── services/
+│   └── apiClient.js          cliente da REST API (api/)
+├── ai/                       pipeline de IA (treino + inferência, ver abaixo)
+│   ├── generateDataset.js    gera dataset sintético
+│   ├── trainModel.js         treina o modelo (tfjs-node)
+│   ├── exportWeights.js      exporta pesos para modelWeights.js
+│   ├── climateAI.js          carrega o modelo (tfjs)
+│   ├── pureInference.js      inferência sem tfjs (usada no mobile)
+│   ├── modelWeights.js       pesos gerados (não editar à mão)
+│   └── data/dataset.json
 ├── utils/
 │   ├── mockData.js           geração de dados simulados
-│   └── csvExport.js          export CSV
+│   └── pdfExport.js          export PDF (jsPDF)
 ├── constants/
 │   └── index.js              cores, regras, thresholds, sensores
 └── styles/
     ├── theme.css             variáveis CSS (claro/escuro)
     ├── dashboard.css         layout
-    └── components.css        cards, botões, etc.
+    ├── components.css        cards, botões, etc.
+    └── login.css             tela de login
+```
+
+### Pipeline de IA
+
+O modelo (rede neural que prevê a temperatura-alvo ideal) é treinado offline e
+embarcado no app. Para regenerar:
+
+```bash
+node src/ai/generateDataset.js   # gera src/ai/data/dataset.json
+node src/ai/trainModel.js        # treina → public/ai-model/
+node src/ai/exportWeights.js     # exporta pesos → src/ai/modelWeights.js
 ```
 
 ## Schema do Realtime Database
@@ -183,4 +225,4 @@ A autenticação é **independente do modo de dados**: você consegue logar e ve
 
 ## Segurança
 
-Veja [`FIREBASE_SETUP.md`](FIREBASE_SETUP.md) para as ações que precisam ser feitas no console Firebase (rotação de API key e Security Rules).
+Veja [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md) para as ações que precisam ser feitas no console Firebase (rotação de API key e Security Rules).

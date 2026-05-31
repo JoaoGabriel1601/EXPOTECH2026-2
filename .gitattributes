@@ -1,0 +1,9 @@
+# Normaliza fins de linha: tudo LF no repositório (evita CRLF do Windows).
+* text=auto eol=lf
+
+# Arquivos binários — nunca normalizar.
+*.png binary
+*.jpg binary
+*.svg text eol=lf
+*.bin binary
+*.ico binary

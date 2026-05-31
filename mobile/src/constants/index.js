@@ -109,8 +109,10 @@ export const PERIOD_OPTIONS = [
 ];
 
 export const AI_MODEL_VERSION = "1.0.0";
+
 export const AI_RECALC_DELAY_MS = 15_000;
 export const AI_MIN_PREDICT_INTERVAL_MS = 5_000;
 export const AI_MAX_TARGET_TEMP = 28;
 export const AI_UPDATE_THRESHOLD_C = 0.5;
+
 export const AI_CARD_COLOR = "#facc15";
