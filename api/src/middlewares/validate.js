@@ -13,10 +13,11 @@ export function validate(schemas) {
         if (schemas[key]) {
           const result = schemas[key].safeParse(req[key]);
           if (!result.success) {
-            const err = new Error("Dados de entrada inválidos.");
+            const err = new Error("Um ou mais campos da requisição são inválidos.");
             err.status = 400;
             err.code = "VALIDATION_ERROR";
-            err.details = result.error.issues.map((i) => ({
+            // extensão `errors` do Problem Details (RFC 7807)
+            err.errors = result.error.issues.map((i) => ({
               campo: i.path.join(".") || key,
               mensagem: i.message,
             }));

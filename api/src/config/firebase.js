@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import admin from "firebase-admin";
+import { withTimeout } from "../utils/timeout.js";
 
 /**
  * Inicializa o Firebase Admin SDK uma única vez.
@@ -70,3 +71,45 @@ export function getDb() {
 }
 
 export const firebaseReady = () => _ready;
+
+/** Instância de Auth do Admin SDK (para verificar ID tokens). 503 se indisponível. */
+export function getFirebaseAuth() {
+  if (!_ready) {
+    const err = new Error("Autenticação indisponível (Firebase não inicializado).");
+    err.status = 503;
+    err.code = "DATABASE_UNAVAILABLE";
+    throw err;
+  }
+  return admin.auth();
+}
+
+// ── Resiliência: timeout + circuit breaker sobre o Realtime Database ──
+// Depois de N falhas seguidas, "abre o circuito" e responde 503 rápido por um
+// tempo, em vez de empilhar requisições contra um banco que está fora.
+const CB = { failures: 0, threshold: 5, cooldownMs: 30_000, openUntil: 0 };
+const DB_TIMEOUT_MS = 5000;
+
+export async function dbOp(fn, label = "firebase") {
+  if (Date.now() < CB.openUntil) {
+    const err = new Error("Banco temporariamente indisponível (circuito aberto).");
+    err.status = 503;
+    err.code = "CIRCUIT_OPEN";
+    throw err;
+  }
+  try {
+    const result = await withTimeout(
+      Promise.resolve().then(() => fn(getDb())),
+      DB_TIMEOUT_MS,
+      label
+    );
+    CB.failures = 0;
+    return result;
+  } catch (e) {
+    if (++CB.failures >= CB.threshold) {
+      CB.openUntil = Date.now() + CB.cooldownMs;
+      CB.failures = 0;
+      console.warn(`[firebase] circuit breaker ABERTO por ${CB.cooldownMs}ms`);
+    }
+    throw e;
+  }
+}

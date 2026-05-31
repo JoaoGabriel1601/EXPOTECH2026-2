@@ -1,16 +1,22 @@
 import { z } from "zod";
-
-/** Query da listagem: GET /api/v1/eventos?limit=50 */
-export const listEventosQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(200).optional().default(50),
-});
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "../utils/pagination.js";
 
 /**
- * Registro de evento: POST /api/v1/eventos.
- * Espelha o formato que o app web já grava em /eventos via push().
+ * Query da listagem: GET /api/v1/eventos?page=1&limit=50&sort=desc&type=ac_ligado_manual
+ * - page/limit: paginação (limit com teto MAX_PAGE_SIZE)
+ * - sort: ordem por timestamp
+ * - type: filtro opcional por tipo de evento
  */
+export const listEventosQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE),
+  sort: z.enum(["asc", "desc"]).optional().default("desc"),
+  type: z.string().min(1).max(64).optional(),
+});
+
+/** Registro de evento: POST /api/v1/eventos. */
 export const postEventoSchema = z.object({
   type: z.string().min(1).max(64),
   payload: z.unknown().optional().nullable(),
-  timestamp: z.number().int().positive().optional(), // se ausente, o servidor usa Date.now()
+  timestamp: z.number().int().positive().optional(),
 });

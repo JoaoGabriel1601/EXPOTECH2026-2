@@ -6,6 +6,13 @@ import eventos from "./eventos.routes.js";
 
 const router = Router();
 
+// Dados de telemetria/controle são dinâmicos e a ocupação é potencialmente
+// sensível (LGPD) — não devem ser cacheados por proxies/navegador.
+router.use((req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
 // Índice da versão — útil para descoberta e para o avaliador ver o que existe.
 router.get("/", (req, res) => {
   res.json({

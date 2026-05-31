@@ -1,0 +1,32 @@
+# Governança do contrato — regras do Spectral sobre o openapi.yaml.
+# Estende o ruleset oficial da OpenAPI e adiciona regras próprias do projeto.
+extends: ["spectral:oas"]
+
+rules:
+  # Toda operação precisa de operationId (rastreabilidade / geração de código).
+  operation-operationId: error
+  # Toda operação precisa de summary (documentação mínima).
+  operation-description: warn
+  operation-tags: error
+  # Schemas e propriedades devem ter descrição/exemplo onde fizer sentido.
+  info-contact: warn
+  info-license: warn
+  # Nomes de path em kebab/snake — nada de camelCase em URL (evita RPC disfarçado).
+  path-casing:
+    description: "Paths não devem usar camelCase (use recursos, não funções)."
+    message: "{{path}} não deve conter camelCase — modele como recurso."
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "[a-z][A-Z]"
+  # Toda resposta de erro 4xx/5xx deve usar application/problem+json (RFC 7807).
+  errors-use-problem-json:
+    description: "Respostas de erro devem usar application/problem+json (RFC 7807)."
+    message: "Resposta {{property}} deveria expor application/problem+json."
+    severity: warn
+    given: "$.paths[*][*].responses[?(@property.match(/^(4|5)\\d\\d$/))].content"
+    then:
+      field: "application/problem+json"
+      function: truthy

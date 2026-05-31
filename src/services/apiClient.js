@@ -9,16 +9,34 @@
  * erro { error: { code, status, message, details } }.
  */
 
+import { auth } from "../config/firebase";
+
 const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 export const apiEnabled = Boolean(API_URL);
 
+/** Anexa o ID token (JWT) do usuário logado, quando houver. */
+async function authHeader() {
+  try {
+    const user = auth?.currentUser;
+    if (!user) return {};
+    const token = await user.getIdToken();
+    return { Authorization: `Bearer ${token}` };
+  } catch {
+    return {};
+  }
+}
+
 async function request(method, path, body) {
+  const headers = {
+    ...(body ? { "Content-Type": "application/json" } : {}),
+    ...(await authHeader()),
+  };
   let res;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch (networkErr) {
@@ -32,10 +50,11 @@ async function request(method, path, body) {
   const json = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const err = new Error(json?.error?.message || `Erro HTTP ${res.status}`);
+    // Erro no formato RFC 7807 (Problem Details): { type, title, status, detail, errors }
+    const err = new Error(json?.detail || json?.title || `Erro HTTP ${res.status}`);
     err.status = res.status;
-    err.code = json?.error?.code || "HTTP_ERROR";
-    err.details = json?.error?.details;
+    err.type = json?.type;
+    err.fields = json?.errors; // lista de campos inválidos, quando houver
     throw err;
   }
 
