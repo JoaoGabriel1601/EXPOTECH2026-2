@@ -5,7 +5,25 @@
 **API em produção:** https://climacontrol-api.onrender.com · **Docs:** https://climacontrol-api.onrender.com/api/docs
 **Dashboard:** https://movimenteunifecaf.web.app
 
-> Integrantes e link do vídeo pitch: _preencher_.
+**Integrantes:**
+
+| Nome | RA |
+|---|---|
+| Juliana Kelly da Silva | 46684 |
+| Gabriel Bezerra Teixeira | 40365 |
+| Thiago Nunes da Silva | 38650 |
+| Kayc Balbino Rodrigues Siqueira | 66593 |
+| Luis Henrique Nunes Brito | 62379 |
+| Vinicius Matos Alves | 123418 |
+| Nathan Nascimento | 120341 |
+| Larry Kristian | 40231 |
+| Joao Gabriel Felix Fernandes | 95536 |
+| Vitor Hugo da Costa Santos | 93829 |
+| Rafael Amorim Delgado da Silva | 93994 |
+| Ygor Rodrigues Araujo dos Santos | 62119 |
+| Raissa Maria Moreira Cabral | 59049 |
+
+**Vídeo pitch:** https://youtu.be/oI2Qdm9fJbQ
 
 A API é um **contrato**: o ESP32 e o dashboard dependem dela. Tudo abaixo aponta para a
 evidência no repositório.
@@ -146,5 +164,3 @@ Quatro áreas integradas, cada uma com contribuição concreta:
 | Cache-Control no-store | [routes/v1/index.js](../api/src/routes/v1/index.js) |
 | Testes + CI | [api/test/](../api/test/) + [api-ci.yml](../.github/workflows/api-ci.yml) |
 | ≥3 áreas | Critério 6 acima |
-
-> Itens a preencher: nomes dos integrantes e link do vídeo pitch.

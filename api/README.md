@@ -66,7 +66,7 @@ GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json
 5. No app web, defina `VITE_API_URL` com essa URL.
 
 > Plano free do Render hiberna após ~15 min ocioso; a 1ª requisição depois disso
-> leva ~50s. Antes de apresentar, abra `/health` para "acordar" o serviço.
+> leva ~50s (cold start). Uma chamada a `/health` reativa o serviço.
 
 ## Formato de resposta (contrato)
 

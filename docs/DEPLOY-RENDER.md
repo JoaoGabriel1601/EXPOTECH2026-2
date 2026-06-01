@@ -117,11 +117,11 @@ Pronto: dashboard em `movimenteunifecaf.web.app` consumindo a API no Render.
 
 ---
 
-## ⚠️ Caveat do plano free (importante na apresentação)
+## ⚠️ Caveat do plano free
 
 O serviço **hiberna após ~15 min** sem requisições; a primeira chamada depois disso
-leva **~50 s** (cold start). Antes de apresentar, abra `https://SEU-APP.onrender.com/health`
-1–2 minutos antes para acordar o serviço.
+leva **~50 s** (cold start). Uma chamada a `https://SEU-APP.onrender.com/health`
+reativa o serviço.
 
 ---
 

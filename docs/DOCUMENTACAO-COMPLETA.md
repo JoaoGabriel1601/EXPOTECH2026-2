@@ -24,8 +24,8 @@
 | **Dashboard (produção)** | https://movimenteunifecaf.web.app |
 | **API REST (produção)** | https://climacontrol-api.onrender.com |
 | **Documentação da API (Swagger)** | https://climacontrol-api.onrender.com/api/docs |
-| **Integrantes** | _(preencher)_ |
-| **Vídeo pitch** | _(preencher)_ |
+| **Integrantes** | Juliana Kelly da Silva — 46684<br>Gabriel Bezerra Teixeira — 40365<br>Thiago Nunes da Silva — 38650<br>Kayc Balbino Rodrigues Siqueira — 66593<br>Luis Henrique Nunes Brito — 62379<br>Vinicius Matos Alves — 123418<br>Nathan Nascimento — 120341<br>Larry Kristian — 40231<br>Joao Gabriel Felix Fernandes — 95536<br>Vitor Hugo da Costa Santos — 93829<br>Rafael Amorim Delgado da Silva — 93994<br>Ygor Rodrigues Araujo dos Santos — 62119<br>Raissa Maria Moreira Cabral — 59049 |
+| **Vídeo pitch** | https://youtu.be/oI2Qdm9fJbQ |
 
 <br/><br/><br/>
 
@@ -1135,7 +1135,7 @@ node -e "console.log(JSON.stringify(require('./api/serviceAccount.json')))"
 
 Verificação: `/health` → `{"status":"ok","firebase":"up"}`; `/api/docs` → Swagger; `/api/v1/controle` → 200.
 
-> ⚠️ **Cold start:** o plano free hiberna após ~15 min ocioso; a 1ª requisição depois leva ~50 s. Antes de apresentar, abra `/health` 1–2 min antes para "acordar" o serviço.
+> ⚠️ **Cold start:** o plano free hiberna após ~15 min ocioso; a 1ª requisição depois leva ~50 s. Uma chamada a `/health` reativa o serviço.
 
 ### 16.3. App → EAS Build / OTA
 
@@ -1269,8 +1269,6 @@ O projeto integra **quatro áreas**, cada uma com contribuição concreta:
 ## 21. Apêndices
 
 ### 21.1. Evidências reais da API (capturadas em produção)
-
-> Para "acordar" o serviço (plano free), acesse `/health` 1–2 min antes.
 
 **Leitura (200, envelope, no-store):**
 ```bash

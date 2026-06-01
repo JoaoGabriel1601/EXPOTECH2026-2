@@ -1,8 +1,7 @@
 # Evidências — ClimaControl API (capturadas em produção)
 
 Respostas **reais** da API publicada (`https://climacontrol-api.onrender.com`).
-Use estes exemplos no documento de avaliação e na apresentação. Para "acordar"
-o serviço (plano free), acesse `/health` 1–2 min antes.
+O plano free hiberna após inatividade; uma chamada a `/health` reativa o serviço.
 
 > Os comandos abaixo funcionam em qualquer terminal com `curl`.
 
@@ -127,7 +126,7 @@ npm test               # 19 testes (vitest + supertest) passam
 
 ---
 
-### Tabela resumo de status codes (para a banca)
+### Tabela resumo de status codes
 
 | Cenário | Código | Onde reproduzir |
 |---|---|---|
