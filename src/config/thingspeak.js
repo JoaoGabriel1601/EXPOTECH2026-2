@@ -27,7 +27,7 @@ export const thingSpeakConfig = {
 
 /**
  * Mapeamento field<n> → grandeza. É a fonte da verdade compartilhada com o
- * firmware (firmware/climacontrol/config.h escreve nos mesmos fields).
+ * firmware (firmware/climacontrol/sketch.ino escreve nos mesmos 8 fields).
  */
 export const FIELD_MAP = {
   field1: "ocupacao",
