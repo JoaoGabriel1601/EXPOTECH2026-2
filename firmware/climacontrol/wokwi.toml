@@ -7,9 +7,9 @@
 #   3. Abrir este diagram.json no VS Code e clicar Play.
 #
 # A Wi-Fi gateway do Wokwi dá internet de verdade à VM do ESP32, então o
-# firmware conecta no Firebase RTDB usado pelo dashboard React em src/.
-# O SSID precisa ser "Wokwi-GUEST" (sem senha) — já está plugado via
-# WOKWI_SIMULATION em config.h.
+# firmware publica no canal ThingSpeak lido pelo dashboard React em src/ e
+# consome comandos pela fila TalkBack. O SSID precisa ser "Wokwi-GUEST" (sem
+# senha) — já está plugado via WOKWI_SIMULATION em config.h.
 
 [wokwi]
 version = 1

@@ -2,28 +2,28 @@
 //  ClimaControl — Firmware ESP32
 //  Projeto Integrador — UNIFECAF
 //
-//  Espelha o backend que o dashboard React em src/ espera:
-//    /sensores  → leitura corrente (ocupação, temps, umids, ac_ligado…)
-//    /controle  → escrita do usuário (override manual via dashboard)
-//    /historico → série temporal, push a cada 60s
-//    /eventos   → log de ações (ac_ligado_manual, modo_manual_on, …)
+//  Integração via ThingSpeak (substitui o Firebase RTDB):
+//    - PUBLICA as leituras nos 8 fields do canal (a cada THINGSPEAK_UPDATE_MS).
+//      Cada publicação vira um ponto no histórico que o dashboard lê.
+//        field1 ocupacao   field2 temp_interna  field3 temp_externa
+//        field4 temp_alvo  field5 umid_interna  field6 umid_externa
+//        field7 ac_ligado  field8 modo_manual
+//    - CONSOME comandos de controle do dashboard pela fila TalkBack
+//      (polling em /talkbacks/<id>/commands/execute.json):
+//        AC_ON | AC_OFF | MANUAL_ON | MANUAL_OFF | TARGET:<n>
 //
 //  Bibliotecas (Arduino IDE → Library Manager):
-//    - Firebase Arduino Client Library for ESP8266 and ESP32  (mobizt)
 //    - DHT sensor library  (Adafruit)
 //    - Adafruit Unified Sensor
 //    - IRremoteESP8266
+//  (HTTPClient e WiFi já vêm no core ESP32 — sem dependência de Firebase.)
 //
 //  Board: "ESP32 Dev Module" (esp32 by Espressif Systems).
 // =============================================================================
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <time.h>
-
-#include <Firebase_ESP_Client.h>
-#include <addons/RTDBHelper.h>
-#include <addons/TokenHelper.h>
+#include <HTTPClient.h>
 
 #include "config.h"
 #include "climate.h"
@@ -33,29 +33,24 @@
 // -----------------------------------------------------------------------------
 //  Estado global do firmware
 // -----------------------------------------------------------------------------
-FirebaseData    fbdo;
-FirebaseData    stream;       // canal dedicado para o /controle stream
-FirebaseAuth    fbAuth;
-FirebaseConfig  fbConfig;
-
 bool   manualMode    = false;
 bool   acOn          = false;
 int    targetTempC   = 0;
 int    lastSentTemp  = -1;
 bool   lastSentOn    = false;
 
-uint32_t lastTickMs       = 0;
-uint32_t lastHistoryMs    = 0;
-uint32_t lastBeamUpdateMs = 0;
+// Última leitura calculada no tick — reaproveitada na publicação ao ThingSpeak.
+sensors::Reading lastEnv  = {};
+int    lastPeople   = 0;
+int    lastAlvo     = 0;
 
-// Marca para epoch em milissegundos (NTP sincronizado em setup).
-uint64_t nowEpochMs() {
-  time_t s = time(nullptr);
-  return (uint64_t)s * 1000ULL;
-}
+uint32_t lastTickMs       = 0;
+uint32_t lastBeamUpdateMs = 0;
+uint32_t lastPublishMs    = 0;
+uint32_t lastTalkbackMs   = 0;
 
 // -----------------------------------------------------------------------------
-//  WiFi + NTP
+//  WiFi
 // -----------------------------------------------------------------------------
 void connectWifi() {
   Serial.printf("[wifi] conectando a %s\n", WIFI_SSID);
@@ -69,150 +64,113 @@ void connectWifi() {
   }
   digitalWrite(PIN_STATUS_LED, HIGH);
   Serial.printf("\n[wifi] ok, ip=%s\n", WiFi.localIP().toString().c_str());
-
-  // Horário de Brasília (UTC-3). Sem isso, os timestamps que mandamos em
-  // /historico e /eventos ficariam em 1970 e o dashboard não conseguiria
-  // ordenar nem renderizar os gráficos.
-  configTime(-3 * 3600, 0, "pool.ntp.org", "time.google.com");
-  Serial.print("[ntp] sincronizando");
-  while (time(nullptr) < 100000) { delay(200); Serial.print('.'); }
-  Serial.println(" ok");
 }
 
 // -----------------------------------------------------------------------------
-//  Stream callback — recebe escritas do dashboard em /controle
+//  Publicação no ThingSpeak (/update)
 // -----------------------------------------------------------------------------
-void streamCallback(FirebaseStream data) {
-  String path = data.dataPath();   // "/" (atualização do nó inteiro) ou "/campo"
-  String type = data.dataType();
+// O ThingSpeak data a entrada com o horário do servidor (created_at), então
+// não precisamos de NTP nem de enviar timestamp.
+void publishThingSpeak(int people, const sensors::Reading& env, int alvo, bool on) {
+  if (WiFi.status() != WL_CONNECTED) return;
 
-  // Tratamento campo a campo: o dashboard usa update() com vários keys.
-  auto applyField = [](const String& key, FirebaseStream& d) {
-    if (key == "ac_ligado") {
-      acOn = d.boolData();
-    } else if (key == "modo_manual") {
-      manualMode = d.boolData();
-    } else if (key == "temp_alvo") {
-      if (d.dataType() == "int")        targetTempC = d.intData();
-      else if (d.dataType() == "float") targetTempC = (int)d.floatData();
-    } else if (key == "reset_ocupacao") {
-      sensors::setOccupancy(0);
-    }
-  };
+  // temp_alvo só faz sentido com o A/C ligado; com ele desligado mandamos 0
+  // para o dashboard exibir "—" e o cálculo de uso do A/C bater.
+  int alvoField = on ? alvo : 0;
 
-  if (path == "/") {
-    // Atualização do objeto /controle inteiro.
-    FirebaseJson* j = data.jsonObjectPtr();
-    if (j) {
-      FirebaseJsonData v;
-      if (j->get(v, "ac_ligado") && v.success)    acOn        = v.boolValue;
-      if (j->get(v, "modo_manual") && v.success)  manualMode  = v.boolValue;
-      if (j->get(v, "temp_alvo") && v.success)    targetTempC = (int)v.intValue;
-    }
+  String url = String(THINGSPEAK_HOST) + "/update?api_key=" + THINGSPEAK_WRITE_KEY +
+               "&field1=" + String(people) +
+               "&field2=" + String(env.tempInt, 1) +
+               "&field3=" + String(env.tempExt, 1) +
+               "&field4=" + String(alvoField) +
+               "&field5=" + String(env.umidInt, 1) +
+               "&field6=" + String(env.umidExt, 1) +
+               "&field7=" + String(on ? 1 : 0) +
+               "&field8=" + String(manualMode ? 1 : 0);
+
+  HTTPClient http;
+  http.begin(url);
+  int code = http.GET();
+  if (code == 200) {
+    // O corpo é o id da entrada (>0) em sucesso, ou "0" se foi rejeitado
+    // (ex.: publicou antes dos 15s do rate limit).
+    String body = http.getString();
+    Serial.printf("[ts] update ok, entry=%s\n", body.c_str());
   } else {
-    String key = path.substring(1);  // remove "/"
-    applyField(key, data);
+    Serial.printf("[ts] update falhou: HTTP %d\n", code);
   }
-
-  Serial.printf("[ctrl] manual=%d ac=%d alvo=%d\n", manualMode, acOn, targetTempC);
-}
-
-void streamTimeoutCallback(bool timeout) {
-  if (timeout) Serial.println("[stream] timeout, reconectando…");
+  http.end();
 }
 
 // -----------------------------------------------------------------------------
-//  Firebase setup
+//  Controle via fila TalkBack
 // -----------------------------------------------------------------------------
-void connectFirebase() {
-  // Guard contra placeholders esquecidos. Sem isso, Firebase.ready() nunca
-  // vira true e o boot fica em loop silencioso — péssimo para depurar no
-  // simulador.
-  if (String(FIREBASE_API_KEY) == "VITE_FIREBASE_API_KEY" ||
-      String(FIREBASE_DATABASE_URL).indexOf("seu-projeto") >= 0) {
-    Serial.println("[fb] ERRO: preencha FIREBASE_* em config.h");
-    Serial.println("[fb] sem credenciais, /sensores nao vai ser escrito");
-    return;  // segue o boot pra pelo menos sensores locais e Serial funcionarem
-  }
+// Aplica um command_string vindo do dashboard.
+void applyCommand(const String& cmd) {
+  if (cmd.length() == 0) return;
+  Serial.printf("[talkback] comando: %s\n", cmd.c_str());
 
-  fbConfig.api_key       = FIREBASE_API_KEY;
-  fbConfig.database_url  = FIREBASE_DATABASE_URL;
-  fbAuth.user.email      = FIREBASE_USER_EMAIL;
-  fbAuth.user.password   = FIREBASE_USER_PASSWORD;
-  fbConfig.token_status_callback = tokenStatusCallback;
-
-  Firebase.begin(&fbConfig, &fbAuth);
-  Firebase.reconnectWiFi(true);
-  fbdo.setResponseSize(2048);
-
-  Serial.print("[fb] autenticando");
-  while (!Firebase.ready()) { delay(200); Serial.print('.'); }
-  Serial.println(" ok");
-
-  if (!Firebase.RTDB.beginStream(&stream, "/controle")) {
-    Serial.printf("[stream] erro: %s\n", stream.errorReason().c_str());
-  }
-  Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback);
-}
-
-// -----------------------------------------------------------------------------
-//  Escritas em /sensores, /historico, /eventos
-// -----------------------------------------------------------------------------
-void writeSensors(int people, const sensors::Reading& env, int alvo, bool on) {
-  FirebaseJson json;
-  json.set("ocupacao",     people);
-  json.set("temp_interna", env.tempInt);
-  json.set("temp_externa", env.tempExt);
-  json.set("temp_alvo",    alvo);
-  json.set("umid_interna", env.umidInt);
-  json.set("umid_externa", env.umidExt);
-  json.set("ac_ligado",    on);
-  json.set("modo_manual",  manualMode);
-
-  if (!Firebase.RTDB.updateNode(&fbdo, "/sensores", &json)) {
-    Serial.printf("[fb] /sensores falhou: %s\n", fbdo.errorReason().c_str());
+  if (cmd == "AC_ON") {
+    manualMode = true;
+    acOn       = true;
+  } else if (cmd == "AC_OFF") {
+    manualMode = true;
+    acOn       = false;
+  } else if (cmd == "MANUAL_ON") {
+    manualMode = true;
+  } else if (cmd == "MANUAL_OFF") {
+    manualMode = false;
+  } else if (cmd.startsWith("TARGET:")) {
+    targetTempC = cmd.substring(7).toInt();
+    manualMode  = true;
+    acOn        = true;
   }
 }
 
-void pushHistory(int people, const sensors::Reading& env, int alvo) {
-  FirebaseJson j;
-  j.set("t",  (double)nowEpochMs());  // milissegundos epoch
-  j.set("o",  people);
-  j.set("ti", env.tempInt);
-  j.set("te", env.tempExt);
-  j.set("ta", alvo);
-  j.set("ui", env.umidInt);
-  j.set("ue", env.umidExt);
-  if (!Firebase.RTDB.pushJSON(&fbdo, "/historico", &j)) {
-    Serial.printf("[fb] /historico falhou: %s\n", fbdo.errorReason().c_str());
-  }
+// Extrai o valor de "command_string" da resposta JSON do execute.json.
+// Resposta típica: {"id":12,"command_string":"AC_ON","created_at":...}
+// Quando a fila está vazia o ThingSpeak devolve um corpo sem esse campo.
+String parseCommandString(const String& resp) {
+  int key = resp.indexOf("command_string");
+  if (key < 0) return "";
+  int colon = resp.indexOf(':', key);
+  if (colon < 0) return "";
+  int q1 = resp.indexOf('"', colon);
+  if (q1 < 0) return "";
+  int q2 = resp.indexOf('"', q1 + 1);
+  if (q2 < 0) return "";
+  return resp.substring(q1 + 1, q2);
 }
 
-void logEvent(const char* type, FirebaseJson* payload = nullptr) {
-  if (!Firebase.ready()) return;  // offline mode (placeholders em config.h)
-  FirebaseJson j;
-  j.set("type", type);
-  j.set("timestamp", (double)nowEpochMs());
-  if (payload) j.set("payload", *payload);
-  else         j.set("payload/_", false);  // mantém payload: null no JSON
-  Firebase.RTDB.pushJSON(&fbdo, "/eventos", &j);
+void pollTalkback() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  String url = String(THINGSPEAK_HOST) + "/talkbacks/" + THINGSPEAK_TALKBACK_ID +
+               "/commands/execute.json";
+
+  HTTPClient http;
+  http.begin(url);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  String reqBody = String("api_key=") + THINGSPEAK_TALKBACK_KEY;
+  int code = http.POST(reqBody);
+  if (code == 200) {
+    String resp = http.getString();
+    applyCommand(parseCommandString(resp));
+  } else {
+    Serial.printf("[talkback] poll HTTP %d\n", code);
+  }
+  http.end();
 }
 
 // -----------------------------------------------------------------------------
 //  Lógica de decisão
 // -----------------------------------------------------------------------------
-// Retorna o alvo final levando em conta o modo manual / IA.
-//
-//   modo_manual = true   → respeita temp_alvo que veio do dashboard
+//   modo_manual = true   → respeita targetTempC vindo do TalkBack
 //   modo_manual = false  → calcula com climate::calcTargetTemp()
-//
-// A IA, quando ativa, escreve em /controle/temp_alvo direto pelo navegador
-// (ver src/hooks/useSensorData.js). Como ouvimos esse caminho via stream,
-// o ESP32 não precisa rodar o modelo — basta obedecer ao /controle.
 int decideTarget(int people, float tempExt) {
   if (manualMode) return targetTempC;
   int t = climate::calcTargetTemp(people, tempExt);
-  targetTempC = t;            // sincroniza o cache local
+  targetTempC = t;        // sincroniza o cache local
   acOn        = (t > 0);
   return t;
 }
@@ -231,7 +189,6 @@ void setup() {
   ir_ac::begin();
 
   connectWifi();
-  connectFirebase();
 
   Serial.println("[boot] pronto");
 }
@@ -246,42 +203,37 @@ void loop() {
     lastBeamUpdateMs = now;
   }
 
-  // 2) Tick principal: lê DHTs, decide alvo, escreve /sensores, comanda IR.
+  // 2) Polling do TalkBack: aplica comandos do dashboard antes de decidir.
+  if (now - lastTalkbackMs >= TALKBACK_POLL_MS) {
+    lastTalkbackMs = now;
+    pollTalkback();
+  }
+
+  // 3) Tick principal: lê DHTs, decide alvo, comanda IR e guarda a leitura.
   if (now - lastTickMs >= UPDATE_INTERVAL_MS) {
     lastTickMs = now;
 
-    auto env    = sensors::readEnv();
-    int  people = sensors::occupancy();
-    int  alvo   = decideTarget(people, env.tempExt);
+    lastEnv    = sensors::readEnv();
+    lastPeople = sensors::occupancy();
+    lastAlvo   = decideTarget(lastPeople, lastEnv.tempExt);
 
-    if (Firebase.ready()) {
-      writeSensors(people, env, alvo, acOn);
-
-      if (now - lastHistoryMs >= HISTORY_APPEND_MS) {
-        lastHistoryMs = now;
-        pushHistory(people, env, alvo);
-      }
-    }
-
-    // 3) IR: só transmite quando o estado realmente muda. Cada send() bloqueia
-    //    a stack IR por ~200ms — chamar a cada tick travaria o stream Firebase.
+    // IR: só transmite quando o estado realmente muda. Cada send() bloqueia
+    // a stack IR por ~200ms.
     bool changed = (acOn != lastSentOn) ||
-                   (acOn && alvo != lastSentTemp);
+                   (acOn && lastAlvo != lastSentTemp);
     if (changed) {
-      ir_ac::send(acOn, alvo);
+      ir_ac::send(acOn, lastAlvo);
       lastSentOn   = acOn;
-      lastSentTemp = alvo;
-
-      FirebaseJson payload;
-      payload.set("temp", alvo);
-      payload.set("origem", manualMode ? "manual" : "automatico");
-      logEvent(acOn ? "ac_ligado" : "ac_desligado", &payload);
+      lastSentTemp = lastAlvo;
     }
 
     Serial.printf("[tick] pess=%d  ti=%.1f te=%.1f  alvo=%d  ac=%d  manual=%d\n",
-                  people, env.tempInt, env.tempExt, alvo, acOn, manualMode);
+                  lastPeople, lastEnv.tempInt, lastEnv.tempExt, lastAlvo, acOn, manualMode);
   }
 
-  // O Firebase Client cuida do stream em background; só precisamos garantir
-  // que loop() não bloqueie mais que ~200ms entre iterações.
+  // 4) Publicação ao ThingSpeak (respeita o rate limit de 15s do free tier).
+  if (now - lastPublishMs >= THINGSPEAK_UPDATE_MS) {
+    lastPublishMs = now;
+    publishThingSpeak(lastPeople, lastEnv, lastAlvo, acOn);
+  }
 }

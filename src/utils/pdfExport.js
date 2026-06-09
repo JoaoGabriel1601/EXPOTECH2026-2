@@ -92,7 +92,7 @@ function drawFooter(doc) {
   doc.setFontSize(8);
   doc.setTextColor(BRAND.textMuted);
   doc.text(
-    "ESP32 + Firebase + React — relatório de climatização",
+    "ESP32 + ThingSpeak + React — relatório de climatização",
     marginX,
     pageHeight - 8
   );

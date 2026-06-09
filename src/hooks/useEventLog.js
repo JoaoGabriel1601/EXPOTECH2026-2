@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { ref, onValue, off, query, limitToLast } from "firebase/database";
-import { db, useMockData } from "../config/firebase";
+import { useMockData } from "../config/thingspeak";
+import { getHistory } from "../services/thingspeak";
+import { OCCUPANCY_THRESHOLDS } from "../constants";
 
 const MOCK_EVENTS = [
   { id: "m1", type: "ac_ligado_auto", timestamp: Date.now() - 30 * 60000 },
@@ -8,28 +9,92 @@ const MOCK_EVENTS = [
   { id: "m3", type: "temp_estabilizada", timestamp: Date.now() - 5 * 60000 },
 ];
 
+const POLL_MS = 60_000;
+
+/**
+ * O ThingSpeak não tem um conceito de "eventos" como o Firebase /eventos.
+ * Em vez disso derivamos os eventos no cliente varrendo o histórico do canal
+ * e detectando transições relevantes (A/C ligou/desligou, ocupação alta,
+ * temperatura estabilizada).
+ */
+function deriveEvents(history) {
+  const events = [];
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1];
+    const cur = history[i];
+
+    // A/C: temp_alvo cruzando 0 indica liga/desliga.
+    if (prev.tempAlvo === 0 && cur.tempAlvo > 0) {
+      events.push({
+        id: `ac_on-${cur.timestamp}`,
+        type: "ac_ligado_auto",
+        timestamp: cur.timestamp,
+        payload: { temp: cur.tempAlvo },
+      });
+    } else if (prev.tempAlvo > 0 && cur.tempAlvo === 0) {
+      events.push({
+        id: `ac_off-${cur.timestamp}`,
+        type: "ac_desligado_auto",
+        timestamp: cur.timestamp,
+      });
+    }
+
+    // Ocupação cruzando o limiar alto.
+    if (
+      prev.pessoas <= OCCUPANCY_THRESHOLDS.high &&
+      cur.pessoas > OCCUPANCY_THRESHOLDS.high
+    ) {
+      events.push({
+        id: `ocup-${cur.timestamp}`,
+        type: "ocupacao_alta",
+        timestamp: cur.timestamp,
+        payload: { pessoas: cur.pessoas },
+      });
+    }
+
+    // Temperatura estabilizada (entra na faixa de conforto com A/C ligado).
+    const prevStable = prev.tempAlvo > 0 && Math.abs(prev.tempInt - prev.tempAlvo) < 1.5;
+    const curStable = cur.tempAlvo > 0 && Math.abs(cur.tempInt - cur.tempAlvo) < 1.5;
+    if (!prevStable && curStable) {
+      events.push({
+        id: `stab-${cur.timestamp}`,
+        type: "temp_estabilizada",
+        timestamp: cur.timestamp,
+      });
+    }
+  }
+  return events.sort((a, b) => b.timestamp - a.timestamp);
+}
+
 export function useEventLog(limit = 20) {
   const [events, setEvents] = useState(useMockData ? MOCK_EVENTS : []);
   const [loading, setLoading] = useState(!useMockData);
 
   useEffect(() => {
-    if (useMockData || !db) {
+    if (useMockData) {
       setLoading(false);
       return;
     }
-    const eventsQuery = query(ref(db, "eventos"), limitToLast(limit));
-    const unsub = onValue(eventsQuery, (snap) => {
-      const val = snap.val();
-      if (val) {
-        const list = Object.entries(val).map(([id, ev]) => ({ id, ...ev }));
-        list.sort((a, b) => b.timestamp - a.timestamp);
-        setEvents(list);
-      } else {
-        setEvents([]);
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const history = await getHistory();
+        if (cancelled) return;
+        setEvents(deriveEvents(history).slice(0, limit));
+      } catch {
+        // mantém os eventos anteriores
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
-    });
-    return () => off(ref(db, "eventos"), "value", unsub);
+    };
+
+    load();
+    const id = setInterval(load, POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [limit]);
 
   return { events, loading };

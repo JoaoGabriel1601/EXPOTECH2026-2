@@ -69,7 +69,7 @@ export const SENSORS = [
   { id: "dht-int-2", label: "DHT11 int. 2", detail: "Longe do A/C" },
   { id: "led-ir", label: "LED IR", isAcLed: true },
   { id: "wifi", label: "WiFi", detail: "Conectado" },
-  { id: "firebase", label: "Firebase", detail: "Sincronizado" },
+  { id: "thingspeak", label: "ThingSpeak", detail: "Sincronizado" },
 ];
 
 export const CARD_COLORS_EFFICIENCY = "#f43f5e";

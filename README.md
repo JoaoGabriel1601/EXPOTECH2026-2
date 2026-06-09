@@ -4,7 +4,7 @@
   <img src="public/favicon.svg" width="120" alt="ClimaControl logo" />
 </p>
 
-Dashboard React em tempo real para um sistema de climatização autônoma baseado em ESP32 + Firebase. Monitora ocupação, temperatura interna/externa e umidade, e calcula a temperatura alvo do A/C automaticamente conforme a quantidade de pessoas e o calor externo.
+Dashboard React para um sistema de climatização autônoma baseado em ESP32 + ThingSpeak. Monitora ocupação, temperatura interna/externa e umidade, e calcula a temperatura alvo do A/C automaticamente conforme a quantidade de pessoas e o calor externo. O ESP32 (simulado no Wokwi) publica as leituras num canal ThingSpeak; o dashboard lê o feed por polling e controla o A/C pela fila TalkBack.
 
 > **Projeto Integrador — UNIFECAF**
 
@@ -21,8 +21,8 @@ Dashboard React em tempo real para um sistema de climatização autônoma basead
 |---|---|
 | UI | React 19 + Vite 8 |
 | Gráficos | Recharts 3 |
-| Backend | Firebase Realtime Database |
-| Hospedagem | Firebase Hosting |
+| Backend | ThingSpeak (canal de dados + TalkBack para controle) |
+| Hospedagem | Host estático (build `dist/` — Vercel/Netlify/GitHub Pages/etc.) |
 | Hardware | ESP32 + DHT11 + TCRT5000 + LED IR |
 
 ## Setup
@@ -30,7 +30,7 @@ Dashboard React em tempo real para um sistema de climatização autônoma basead
 ```bash
 npm install
 cp .env.example .env
-# preencha .env com as credenciais do projeto Firebase
+# preencha .env com as chaves do seu canal ThingSpeak
 npm run dev
 ```
 
@@ -38,18 +38,16 @@ npm run dev
 
 | Nome | Descrição |
 |---|---|
-| `VITE_FIREBASE_API_KEY` | API key do projeto Firebase |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `<projeto>.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | ID do projeto |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Bucket de storage |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ID de mensageria |
-| `VITE_FIREBASE_APP_ID` | App ID Web |
-| `VITE_FIREBASE_MEASUREMENT_ID` | Measurement ID (Analytics) |
-| `VITE_FIREBASE_DATABASE_URL` | URL do Realtime Database |
-| `VITE_USE_MOCK_DATA` | `false` (default) usa Firebase real; `true` força dados simulados |
-| `VITE_SKIP_AUTH` | `true` pula a tela de login (use só em dev) |
+| `VITE_THINGSPEAK_CHANNEL_ID` | ID numérico do canal de dados |
+| `VITE_THINGSPEAK_READ_KEY` | Read API Key do canal |
+| `VITE_THINGSPEAK_TALKBACK_ID` | ID da fila TalkBack (controle) |
+| `VITE_THINGSPEAK_TALKBACK_KEY` | TalkBack API Key |
+| `VITE_THINGSPEAK_RESULTS` | Nº de pontos do histórico (default 200) |
+| `VITE_USE_MOCK_DATA` | `false` (default) lê o canal real; `true` força dados simulados |
 
-> Por padrão `VITE_USE_MOCK_DATA=false` — o app conecta ao Realtime Database real. Se as variáveis `VITE_FIREBASE_*` não estiverem preenchidas, o app cai em modo simulação automaticamente. Para uma demo sem o ESP32 ligado, basta definir `VITE_USE_MOCK_DATA=true`.
+> Se `VITE_THINGSPEAK_CHANNEL_ID`/`READ_KEY` não estiverem preenchidas, o app cai em modo simulação automaticamente. Para uma demo sem o ESP32, defina `VITE_USE_MOCK_DATA=true`. Sem `VITE_THINGSPEAK_TALKBACK_*`, o controle do A/C fica desabilitado (dashboard só de leitura).
+>
+> ⚠️ Tudo com prefixo `VITE_` é embutido no bundle público — as chaves do ThingSpeak ficam expostas no navegador (limitação conhecida de apps client-side; aceitável para o projeto acadêmico). Não reaproveite essas chaves em nada sensível.
 
 ## Scripts
 
@@ -64,12 +62,11 @@ npm run test:watch
 
 ## Arquitetura
 
-Monorepo com quatro frentes:
+Monorepo com três frentes:
 
 ```
 .
 ├── src/          dashboard web (React 19 + Vite)
-├── api/          REST API (Express + Firebase) — deploy no Render
 ├── mobile/       app Android (Expo + React Native)
 ├── firmware/     ESP32 (Arduino/PlatformIO + Wokwi)
 ├── public/       estáticos + modelo de IA exportado (ai-model/)
@@ -83,10 +80,9 @@ src/
 ├── App.jsx                   composição do dashboard
 ├── main.jsx                  entry point
 ├── config/
-│   └── firebase.js           inicialização (carrega só se !mock)
+│   └── thingspeak.js         config do canal + flags (mock, controle)
 ├── components/
 │   ├── Header.jsx
-│   ├── Login.jsx
 │   ├── MetricCard.jsx
 │   ├── StatusPill.jsx
 │   ├── SectionTitle.jsx
@@ -107,12 +103,11 @@ src/
 │       ├── ChartAcUsage.jsx
 │       └── ChartAIComparison.jsx
 ├── hooks/
-│   ├── useSensorData.js      leitura real-time + fallback mock + ações de controle
-│   ├── useEventLog.js        log de eventos
-│   ├── useClimateAI.js       inferência do modelo de IA
-│   └── useAuth.js            autenticação Firebase (email/senha)
+│   ├── useSensorData.js      polling do feed + fallback mock + ações de controle (TalkBack)
+│   ├── useEventLog.js        eventos derivados das transições do feed
+│   └── useClimateAI.js       inferência do modelo de IA
 ├── services/
-│   └── apiClient.js          cliente da REST API (api/)
+│   └── thingspeak.js         cliente REST (getLatest, getHistory, sendCommand)
 ├── ai/                       pipeline de IA (treino + inferência, ver abaixo)
 │   ├── generateDataset.js    gera dataset sintético
 │   ├── trainModel.js         treina o modelo (tfjs-node)
@@ -129,8 +124,7 @@ src/
 └── styles/
     ├── theme.css             variáveis CSS (claro/escuro)
     ├── dashboard.css         layout
-    ├── components.css        cards, botões, etc.
-    └── login.css             tela de login
+    └── components.css        cards, botões, etc.
 ```
 
 ### Pipeline de IA
@@ -144,45 +138,37 @@ node src/ai/trainModel.js        # treina → public/ai-model/
 node src/ai/exportWeights.js     # exporta pesos → src/ai/modelWeights.js
 ```
 
-## Schema do Realtime Database
+## Mapeamento do canal ThingSpeak
 
-```jsonc
-{
-  "sensores": {
-    "ocupacao": 12,
-    "temp_interna": 22.4,
-    "temp_externa": 31.2,
-    "temp_alvo": 21,
-    "umid_interna": 55,
-    "umid_externa": 68,
-    "ac_ligado": true,
-    "modo_manual": false
-  },
-  "controle": {
-    "ac_ligado": true,
-    "modo_manual": false,
-    "temp_alvo": 22
-  },
-  "historico": {
-    "<pushId>": {
-      "t": 1714000000000,  // timestamp ms
-      "o": 12,             // ocupação
-      "ti": 22.4,          // temp interna
-      "te": 31.2,          // temp externa
-      "ta": 21,            // temp alvo
-      "ui": 55,            // umidade interna
-      "ue": 68             // umidade externa
-    }
-  },
-  "eventos": {
-    "<pushId>": {
-      "type": "ac_ligado_manual",
-      "timestamp": 1714000000000,
-      "payload": null
-    }
-  }
-}
-```
+O ESP32 publica em `https://api.thingspeak.com/update` os 8 fields do canal.
+Cada publicação vira um ponto no histórico (o dashboard lê o feed). Fonte da
+verdade do mapeamento: [`src/config/thingspeak.js`](src/config/thingspeak.js) (`FIELD_MAP`).
+
+| Field | Grandeza | Observação |
+|---|---|---|
+| `field1` | ocupação | inteiro |
+| `field2` | temp_interna | média dos DHTs internos |
+| `field3` | temp_externa | DHT externo |
+| `field4` | temp_alvo | 0 = A/C desligado |
+| `field5` | umid_interna | % |
+| `field6` | umid_externa | % |
+| `field7` | ac_ligado | 0/1 |
+| `field8` | modo_manual | 0/1 |
+
+### Controle via TalkBack
+
+O dashboard enfileira comandos em `/talkbacks/<id>/commands.json`; o ESP32
+consome em `/talkbacks/<id>/commands/execute.json` por polling:
+
+| Comando | Efeito |
+|---|---|
+| `AC_ON` / `AC_OFF` | liga/desliga o A/C (entra em modo manual) |
+| `MANUAL_ON` / `MANUAL_OFF` | alterna o modo manual |
+| `TARGET:<n>` | define a temperatura alvo (entra em modo manual) |
+
+> Os "eventos recentes" não existem como armazenamento no ThingSpeak — são
+> derivados no cliente varrendo as transições do feed (A/C ligou/desligou,
+> ocupação alta, temperatura estabilizada). Ver [`src/hooks/useEventLog.js`](src/hooks/useEventLog.js).
 
 ## Regras de climatização
 
@@ -199,30 +185,22 @@ Implementação canônica em [`src/constants/index.js`](src/constants/index.js) 
 ## Deploy
 
 ```bash
-npm run build
-npx firebase deploy --only hosting
+npm run build       # gera dist/ (SPA estática)
+npm run preview     # serve dist/ localmente para conferir
 ```
 
-## Modo simulação vs. Firebase
+O `dist/` é uma SPA estática — publique em qualquer host estático (Vercel,
+Netlify, GitHub Pages, Cloudflare Pages, etc.). As chaves do ThingSpeak vão
+embutidas no build; configure-as no ambiente de build antes do `npm run build`.
 
-O dashboard tem dois eixos independentes:
+## Modo simulação vs. ThingSpeak
 
-| Cenário | `VITE_FIREBASE_*` | `VITE_USE_MOCK_DATA` | Login | Dashboard |
-|---|---|---|---|---|
-| **Produção** (ESP32 ligado) | preenchido | `false` | Firebase real | Realtime Database |
-| **Demo com login real** | preenchido | `true` | Firebase real | Mock local |
-| **Demo total** (sem config) | vazio | qualquer | Bypass (auto-login) | Mock local |
+| Cenário | `VITE_THINGSPEAK_*` | `VITE_USE_MOCK_DATA` | Dashboard |
+|---|---|---|---|
+| **Produção** (ESP32 publicando) | preenchido | `false` | lê o canal real (polling) |
+| **Demo** | qualquer | `true` | Mock local |
+| **Sem config** | vazio | qualquer | cai em mock automaticamente |
 
-Auth e dados são desacoplados: se as chaves Firebase estão preenchidas, o login sempre usa Firebase Auth, mesmo quando `VITE_USE_MOCK_DATA=true`. Isso permite demonstrar o fluxo de autenticação real enquanto os gráficos rodam com dados simulados.
+Quando o modo simulação está ativo, o header mostra a pill "Modo simulação" em laranja, e o ControlPanel apenas atualiza estado local (não envia comandos TalkBack). Se as variáveis `VITE_THINGSPEAK_*` não estiverem preenchidas, o app cai em modo simulação automaticamente — `npm run dev` nunca quebra.
 
-Quando o modo simulação está ativo, o header mostra a pill "Modo simulação" em laranja, e o ControlPanel apenas atualiza estado local (não envia escritas). Se as variáveis `VITE_FIREBASE_*` não estiverem preenchidas, o app cai em modo simulação automaticamente — `npm run dev` nunca quebra.
-
-## Autenticação
-
-O dashboard requer login (email/senha) via Firebase Auth. Crie usuários no console Firebase em **Authentication → Users → Add user**.
-
-A autenticação é **independente do modo de dados**: você consegue logar e ver mock data, ou logar e ver Firebase real, conforme `VITE_USE_MOCK_DATA`. Para pular o login em desenvolvimento, defina `VITE_SKIP_AUTH=true`.
-
-## Segurança
-
-Veja [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md) para as ações que precisam ser feitas no console Firebase (rotação de API key e Security Rules).
+O dashboard abre direto, sem tela de login (a autenticação por Firebase Auth foi removida na migração para o ThingSpeak).

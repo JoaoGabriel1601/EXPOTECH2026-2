@@ -1,6 +1,5 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { Header } from "./components/Header";
-import { Login } from "./components/Login";
 import { MetricCard } from "./components/MetricCard";
 import { SectionTitle } from "./components/SectionTitle";
 import { RulesTable } from "./components/RulesTable";
@@ -19,8 +18,7 @@ import {
   BrainIcon,
 } from "./components/icons";
 import { useSensorData } from "./hooks/useSensorData";
-import { useAuth } from "./hooks/useAuth";
-import { useMockData } from "./config/firebase";
+import { useMockData } from "./config/thingspeak";
 import {
   CARD_COLORS,
   CARD_COLORS_EFFICIENCY,
@@ -90,12 +88,6 @@ function describeTempStatus(live) {
 
 export default function App() {
   const {
-    user,
-    loading: authLoading,
-    signIn,
-    signOut,
-  } = useAuth();
-  const {
     history,
     live,
     acOn,
@@ -160,18 +152,6 @@ export default function App() {
     });
   }, [filteredHistory, periodId]);
 
-  if (authLoading) {
-    return (
-      <div className="dashboard" aria-busy="true">
-        <div className="loading-state">Verificando sessão...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Login onSignIn={signIn} />;
-  }
-
   if (error) {
     return (
       <div className="dashboard">
@@ -179,8 +159,6 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
-          user={user}
-          onSignOut={signOut}
         />
         <div className="error-state" role="alert">
           Erro ao carregar dados: {error.message}
@@ -196,8 +174,6 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
-          user={user}
-          onSignOut={signOut}
         />
         <div className="metric-grid" aria-busy="true">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -215,15 +191,13 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
-          user={user}
-          onSignOut={signOut}
         />
         <div className="empty-state" role="status">
           <h2>Aguardando dados dos sensores</h2>
           <p>
-            Conexão com o Firebase estabelecida, mas o caminho{" "}
-            <code>/sensores</code> ainda está vazio. Assim que o ESP32 enviar a
-            primeira leitura, o dashboard atualiza automaticamente.
+            Conexão com o ThingSpeak estabelecida, mas o canal ainda não tem
+            leituras. Assim que o ESP32 publicar a primeira entrada, o dashboard
+            atualiza automaticamente.
           </p>
           {!useMockData && (
             <p className="empty-state__hint">
@@ -247,8 +221,6 @@ export default function App() {
         manualMode={manualMode}
         connectionStatus={connectionStatus}
         onExport={handleExport}
-        user={user}
-        onSignOut={signOut}
       />
 
       <section className="metric-grid" aria-label="Métricas atuais">
@@ -402,7 +374,7 @@ export default function App() {
 
       <footer className="footer">
         Sistema de climatização autônoma — Projeto de faculdade — ESP32 +
-        Firebase + React
+        ThingSpeak + React
       </footer>
     </main>
   );

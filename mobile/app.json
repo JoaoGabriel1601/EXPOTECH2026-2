@@ -33,23 +33,17 @@
         "backgroundColor": "#0a0e15"
       },
       "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
         "VIBRATE",
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "WAKE_LOCK",
-        "RECEIVE_BOOT_COMPLETED",
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "RECEIVE_BOOT_COMPLETED"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store",
-      "expo-local-authentication",
       "expo-font",
       [
         "expo-splash-screen",
@@ -77,16 +71,12 @@
       ]
     ],
     "extra": {
-      "firebaseApiKey": "REPLACE_WITH_YOUR_KEY",
-      "firebaseAuthDomain": "REPLACE_WITH_YOUR_AUTHDOMAIN",
-      "firebaseProjectId": "REPLACE_WITH_YOUR_PROJECT_ID",
-      "firebaseStorageBucket": "REPLACE_WITH_YOUR_BUCKET",
-      "firebaseMessagingSenderId": "REPLACE_WITH_SENDER_ID",
-      "firebaseAppId": "REPLACE_WITH_APP_ID",
-      "firebaseDatabaseUrl": "REPLACE_WITH_DATABASE_URL",
-      "firebaseMeasurementId": "",
+      "thingspeakChannelId": "REPLACE_WITH_CHANNEL_ID",
+      "thingspeakReadKey": "REPLACE_WITH_READ_KEY",
+      "thingspeakTalkbackId": "REPLACE_WITH_TALKBACK_ID",
+      "thingspeakTalkbackKey": "REPLACE_WITH_TALKBACK_KEY",
+      "thingspeakResults": 200,
       "useMockData": false,
-      "skipAuth": false,
       "eas": {
         "projectId": "91e62a2e-c1e9-4267-9fc9-b53135afa00f"
       }

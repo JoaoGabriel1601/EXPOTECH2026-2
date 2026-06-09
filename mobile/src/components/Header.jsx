@@ -5,7 +5,7 @@ import { StatusPill } from "./StatusPill";
 import { useTheme } from "../contexts/ThemeContext";
 import { Logo } from "./Logo";
 import { radius, spacing, typography } from "../utils/theme";
-import { useMockData } from "../config/firebase";
+import { useMockData } from "../config/thingspeak";
 
 function HeaderComponent({
   acOn,

@@ -20,7 +20,7 @@ function dotColor(status, theme) {
 function SystemStatusComponent({ live, acOn, connectionStatus }) {
   const { theme } = useTheme();
   const styles = makeStyles(theme);
-  const firebaseOnline =
+  const cloudOnline =
     connectionStatus === "online" || connectionStatus === "mock";
 
   return (
@@ -31,9 +31,9 @@ function SystemStatusComponent({ live, acOn, connectionStatus }) {
         if (sensor.isAcLed) {
           status = acOn ? "ativo" : "standby";
           detail = acOn ? `Emitindo ${live?.tempAlvo ?? 0}°C` : "Aguardando";
-        } else if (sensor.id === "firebase") {
-          status = firebaseOnline ? "online" : "offline";
-          detail = firebaseOnline
+        } else if (sensor.id === "thingspeak") {
+          status = cloudOnline ? "online" : "offline";
+          detail = cloudOnline
             ? connectionStatus === "mock"
               ? "Modo simulação"
               : "Sincronizado"

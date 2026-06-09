@@ -2,7 +2,7 @@
 
 App Android nativo do **ClimaControl** — dashboard de climatização autônoma — feito em **React Native + Expo**, reutilizando ~70% da lógica do dashboard web (hooks, constants, utils).
 
-> Conecta ao Firebase real por padrão. Se as chaves não estiverem preenchidas (`app.json` → `expo.extra` ainda com placeholders), cai em modo mock automaticamente — você pode testar agora mesmo sem configurar nada.
+> Lê os dados de um canal **ThingSpeak** (uplink do ESP32) e controla o A/C pela fila **TalkBack**. Se as chaves não estiverem preenchidas (`app.json` → `expo.extra` ainda com placeholders), cai em modo mock automaticamente — você pode testar agora mesmo sem configurar nada. O app abre direto, sem tela de login.
 
 ---
 
@@ -49,21 +49,19 @@ cp .env.example .env
 ```
 
 ```env
-EXPO_PUBLIC_FIREBASE_API_KEY=AIza...
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
-EXPO_PUBLIC_FIREBASE_DATABASE_URL=https://...firebaseio.com
-EXPO_PUBLIC_USE_MOCK_DATA=true   # true = dashboard mock, login real
-EXPO_PUBLIC_SKIP_AUTH=false
+EXPO_PUBLIC_THINGSPEAK_CHANNEL_ID=...
+EXPO_PUBLIC_THINGSPEAK_READ_KEY=...
+EXPO_PUBLIC_THINGSPEAK_TALKBACK_ID=...
+EXPO_PUBLIC_THINGSPEAK_TALKBACK_KEY=...
+EXPO_PUBLIC_THINGSPEAK_RESULTS=200
+EXPO_PUBLIC_USE_MOCK_DATA=true   # true = dashboard mock; false = canal real
 ```
 
-Alternativa: editar [app.json](app.json) → `expo.extra` (vai pro git, então só faça se quiser comprometer as chaves).
+Alternativa: editar [app.json](app.json) → `expo.extra` (`thingspeakChannelId`, `thingspeakReadKey`, `thingspeakTalkbackId`, `thingspeakTalkbackKey`, `thingspeakResults`) — vai pro git, então só faça se quiser comprometer as chaves. Guia completo: [`../docs/THINGSPEAK_SETUP.md`](../docs/THINGSPEAK_SETUP.md).
 
-> **Login real + dashboard mock:** preencha as chaves Firebase e deixe `EXPO_PUBLIC_USE_MOCK_DATA=true`. A tela de login vai usar Firebase Auth de verdade, e os dados do dashboard são gerados localmente.
+> **Dashboard real:** preencha as chaves e use `EXPO_PUBLIC_USE_MOCK_DATA=false`. Exige o ESP32 publicando no canal. Sem `EXPO_PUBLIC_THINGSPEAK_TALKBACK_*`, o controle do A/C fica desabilitado (só leitura).
 >
-> **Login + dashboard reais:** preencha as chaves e use `EXPO_PUBLIC_USE_MOCK_DATA=false`. Exige `/sensores` populado no Realtime Database (ESP32 publicando).
->
-> **Sem chaves:** o app cai em mock total (login bypass + dashboard mock) — útil pra rodar sem configurar nada.
+> **Sem chaves:** o app cai em mock automaticamente — útil pra rodar sem configurar nada.
 
 ---
 
@@ -167,9 +165,8 @@ mobile/
 │   └── generate-icons.mjs       # Converte SVG → PNGs
 └── src/
     ├── navigation/
-    │   └── AppNavigator.jsx     # Stack: Login ↔ Dashboard
+    │   └── AppNavigator.jsx     # Stack: abre direto no Dashboard
     ├── screens/
-    │   ├── LoginScreen.jsx
     │   └── DashboardScreen.jsx
     ├── components/
     │   ├── Logo.jsx             # SVG vetorial in-app
@@ -189,15 +186,15 @@ mobile/
     │       ├── HumidityChart.jsx
     │       └── AcUsageChart.jsx
     ├── hooks/
-    │   ├── useSensorData.js     # Realtime DB + mock
-    │   ├── useAuth.js           # Firebase Auth
-    │   ├── useEventLog.js
-    │   ├── useBiometric.js      # Fingerprint / Face ID
+    │   ├── useSensorData.js     # polling do feed ThingSpeak + mock + TalkBack
+    │   ├── useEventLog.js       # eventos derivados das transições do feed
     │   └── useNotifications.js  # FCM via expo-notifications
     ├── contexts/
     │   └── ThemeContext.jsx     # Dark/light/auto + persist
     ├── config/
-    │   └── firebase.js          # Adaptado p/ Expo Constants
+    │   └── thingspeak.js        # config do canal (Expo Constants/env)
+    ├── services/
+    │   └── thingspeak.js        # cliente REST (getLatest/getHistory/sendCommand)
     ├── constants/
     │   └── index.js             # ← copy do web (inalterado)
     ├── utils/
@@ -213,9 +210,8 @@ mobile/
 
 | Feature | Status |
 |---|---|
-| Login com Firebase Auth | ✅ |
-| Biometria (digital / Face ID) | ✅ via `expo-local-authentication` |
-| Credenciais seguras | ✅ via `expo-secure-store` |
+| Backend ThingSpeak (canal + TalkBack) | ✅ leitura por polling + controle |
+| Abre direto (sem login) | ✅ |
 | Dashboard responsivo | ✅ |
 | 4 gráficos animados (Skia) | ✅ Victory Native v41 |
 | Controle manual A/C | ✅ Slider + Switch + Haptics |
@@ -232,6 +228,6 @@ mobile/
 
 **APK build falha em "Resolving Android SDK"** — Rode `eas build:configure` antes do primeiro build.
 
-**Login não funciona com Firebase real** — Verifique `app.json` → `expo.extra.firebaseApiKey`. Se vazio, o app cai em modo mock automaticamente.
+**Dashboard vazio com canal real** — Verifique `app.json` → `expo.extra.thingspeakChannelId`/`thingspeakReadKey` (ou as `EXPO_PUBLIC_THINGSPEAK_*`). Se vazios/placeholders, o app cai em modo mock automaticamente. Confirme também que o ESP32 está publicando no canal.
 
 **Gráficos em branco no Android** — Skia precisa do hermes engine; já vem habilitado no Expo SDK 52.

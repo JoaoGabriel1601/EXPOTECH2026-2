@@ -1,7 +1,7 @@
 import { StatusPill } from "./StatusPill";
 import { ThemeToggle } from "./ThemeToggle";
 import { DownloadIcon, LogoutIcon } from "./icons";
-import { useMockData } from "../config/firebase";
+import { useMockData } from "../config/thingspeak";
 
 export function Header({
   acOn,
@@ -50,7 +50,7 @@ export function Header({
           aria-label={`Status da conexão: ${liveLabel}`}
           title={
             isMock
-              ? "Dados simulados — defina VITE_USE_MOCK_DATA=false para conectar ao Firebase"
+              ? "Dados simulados — defina VITE_USE_MOCK_DATA=false para conectar ao ThingSpeak"
               : undefined
           }
         >

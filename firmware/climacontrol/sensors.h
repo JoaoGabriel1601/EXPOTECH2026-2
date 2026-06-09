@@ -30,7 +30,7 @@ void updateBeams(uint32_t nowMs);
 // Contagem corrente de pessoas dentro da sala. Saturada em [0, 999].
 int occupancy();
 
-// Permite sobrescrever a ocupação (ex.: reset manual via Firebase).
+// Permite sobrescrever a ocupação (ex.: reset manual).
 void setOccupancy(int value);
 
 // Acumuladores de cruzamentos desde o boot. Úteis para diagnóstico

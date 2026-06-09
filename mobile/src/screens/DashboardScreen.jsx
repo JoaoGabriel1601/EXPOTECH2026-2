@@ -25,7 +25,6 @@ import { HumidityChart } from "../components/charts/HumidityChart";
 import { AcUsageChart } from "../components/charts/AcUsageChart";
 import { AIComparisonChart } from "../components/charts/AIComparisonChart";
 import { useSensorData } from "../hooks/useSensorData";
-import { useAuth } from "../hooks/useAuth";
 import { useNotifications } from "../hooks/useNotifications";
 import { useTheme } from "../contexts/ThemeContext";
 import {
@@ -72,7 +71,6 @@ function describeTempStatus(live) {
 export function DashboardScreen() {
   const { theme, mode, setMode, resolvedMode } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
   const {
     history,
     live,
@@ -133,8 +131,6 @@ export function DashboardScreen() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
-          user={user}
-          onSignOut={signOut}
           onToggleTheme={toggleTheme}
         />
         <View style={styles.errorBox}>
@@ -152,8 +148,6 @@ export function DashboardScreen() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
-          user={user}
-          onSignOut={signOut}
           onToggleTheme={toggleTheme}
         />
         <View style={styles.loading}>
@@ -169,8 +163,6 @@ export function DashboardScreen() {
         acOn={acOn}
         manualMode={manualMode}
         connectionStatus={connectionStatus}
-        user={user}
-        onSignOut={signOut}
         onToggleTheme={toggleTheme}
       />
       {activeTab === "overview" ? (
@@ -358,7 +350,7 @@ export function DashboardScreen() {
         )}
 
           <Text style={styles.footer}>
-            Sistema de climatização autônoma — ESP32 + Firebase + Expo
+            Sistema de climatização autônoma — ESP32 + ThingSpeak + Expo
           </Text>
         </ScrollView>
       )}

@@ -6,13 +6,14 @@
 //
 //  Antes de gravar:
 //   1. Preencha WIFI_SSID / WIFI_PASSWORD com sua rede.
-//   2. Em FIREBASE_*, copie os mesmos valores do .env do dashboard
-//      (VITE_FIREBASE_API_KEY, VITE_FIREBASE_DATABASE_URL).
-//   3. Crie um usuário em Firebase Auth (Authentication → Users → Add user)
-//      e coloque email/senha em FIREBASE_USER_EMAIL / FIREBASE_USER_PASSWORD.
-//      O ESP32 escreve no RTDB como esse usuário; as Security Rules devem
-//      permitir leitura/escrita autenticada nos caminhos /sensores, /controle,
-//      /historico, /eventos, /ia.
+//   2. Em THINGSPEAK_*, cole as chaves do seu canal ThingSpeak:
+//        - Write API Key (aba "API Keys" do canal) → publica os 8 fields.
+//        - TalkBack ID + TalkBack API Key (Apps → TalkBack) → fila de comandos
+//          que o dashboard usa para controlar o A/C (ligar, temp alvo, manual).
+//      O ESP32 publica em /update e consome comandos em
+//      /talkbacks/<id>/commands/execute.json por polling.
+//   3. Os mesmos valores de leitura (Channel ID, Read API Key, TalkBack) vão
+//      no .env do dashboard (VITE_THINGSPEAK_*).
 //   4. Ajuste a pinagem se sua placa for diferente. No hardware real os
 //      HC-SR04 ligados em 5V geram ECHO em 5V — use divisor (1kΩ + 2kΩ)
 //      para entrar em 3.3V no ESP32, ou alimente o HC-SR04 em 3V3 (a
@@ -32,11 +33,25 @@
   #define WIFI_PASSWORD "SUA_SENHA_WIFI"
 #endif
 
-// ---------------------- Firebase --------------------------------------------
-#define FIREBASE_API_KEY       "VITE_FIREBASE_API_KEY"
-#define FIREBASE_DATABASE_URL  "https://seu-projeto-default-rtdb.firebaseio.com"
-#define FIREBASE_USER_EMAIL    "esp32@climacontrol.local"
-#define FIREBASE_USER_PASSWORD "trocar-essa-senha"
+// ---------------------- ThingSpeak ------------------------------------------
+// Host da API. Usamos HTTP simples (porta 80): no Wokwi evita o overhead de
+// TLS e o ThingSpeak aceita /update e TalkBack sem HTTPS.
+#define THINGSPEAK_HOST          "http://api.thingspeak.com"
+
+// Write API Key do canal (aba "API Keys"). Publica os 8 fields em /update.
+#define THINGSPEAK_WRITE_KEY     "SUA_WRITE_API_KEY"
+
+// Fila TalkBack (Apps → TalkBack) usada para o controle vindo do dashboard.
+#define THINGSPEAK_TALKBACK_ID   "000000"
+#define THINGSPEAK_TALKBACK_KEY  "SUA_TALKBACK_API_KEY"
+
+// Intervalo mínimo entre publicações no ThingSpeak. O plano gratuito aceita
+// 1 escrita a cada 15s; usamos 20s com folga. Cada publicação vira um ponto
+// no histórico do canal (o dashboard lê o feed).
+#define THINGSPEAK_UPDATE_MS     20000UL
+
+// Período de polling da fila TalkBack (comandos do dashboard).
+#define TALKBACK_POLL_MS         15000UL
 
 // ---------------------- Pinagem ESP32 ---------------------------------------
 // DHT (3 unidades): 1 externo + 2 internos (perto/longe do A/C).
