@@ -249,6 +249,14 @@ export function DashboardScreen() {
           </View>
           <View style={styles.metricRow}>
             <MetricCard
+              icon="water"
+              label="Umid. externa"
+              value={live.umidExt}
+              unit="%"
+              sub={describeHumidity(live.umidExt)}
+              color={CARD_COLORS.umidExt}
+            />
+            <MetricCard
               icon="flash"
               label="Uso A/C"
               value={Math.round(acUsage.percent)}
@@ -259,7 +267,6 @@ export function DashboardScreen() {
                   : "Coletando..."
               }
               color={CARD_COLORS_EFFICIENCY}
-              centered
             />
           </View>
         </View>

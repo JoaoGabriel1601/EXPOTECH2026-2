@@ -13,6 +13,7 @@ export const CARD_COLORS = {
   tempExt: "#f97316",
   tempAlvo: "#22c55e",
   umidInt: "#06b6d4",
+  umidExt: "#f59e0b",
 };
 
 export const UPDATE_INTERVAL_MS = 5000;

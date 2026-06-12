@@ -289,6 +289,14 @@ export default function App() {
           color={CARD_COLORS.umidInt}
         />
         <MetricCard
+          icon={DropIcon}
+          label="Umidade ext."
+          value={live.umidExt}
+          unit="%"
+          sub={describeHumidity(live.umidExt)}
+          color={CARD_COLORS.umidExt}
+        />
+        <MetricCard
           icon={PowerIcon}
           label="Uso do A/C"
           value={Math.round(acUsage.percent)}
