@@ -14,9 +14,12 @@ import Constants from "expo-constants";
 
 const extra = Constants.expoConfig?.extra ?? {};
 
-function pick(envKey, extraKey) {
-  const env = process.env?.[envKey];
-  if (env && env.length) return env;
+// IMPORTANTE: o Metro só inlina EXPO_PUBLIC_* quando o acesso é ESTÁTICO
+// (process.env.EXPO_PUBLIC_FOO escrito literalmente). Por isso passamos o
+// VALOR já resolvido aqui — acesso dinâmico (process.env[chave]) não é
+// substituído no bundle e cairia sempre no fallback do app.json.
+function pick(envValue, extraKey) {
+  if (envValue && envValue.length) return envValue;
   return extra[extraKey];
 }
 
@@ -29,11 +32,11 @@ const TS_BASE = "https://api.thingspeak.com";
 
 export const thingSpeakConfig = {
   baseUrl: TS_BASE,
-  channelId: pick("EXPO_PUBLIC_THINGSPEAK_CHANNEL_ID", "thingspeakChannelId"),
-  readKey: pick("EXPO_PUBLIC_THINGSPEAK_READ_KEY", "thingspeakReadKey"),
-  talkbackId: pick("EXPO_PUBLIC_THINGSPEAK_TALKBACK_ID", "thingspeakTalkbackId"),
-  talkbackKey: pick("EXPO_PUBLIC_THINGSPEAK_TALKBACK_KEY", "thingspeakTalkbackKey"),
-  results: Number(pick("EXPO_PUBLIC_THINGSPEAK_RESULTS", "thingspeakResults")) || 200,
+  channelId: pick(process.env.EXPO_PUBLIC_THINGSPEAK_CHANNEL_ID, "thingspeakChannelId"),
+  readKey: pick(process.env.EXPO_PUBLIC_THINGSPEAK_READ_KEY, "thingspeakReadKey"),
+  talkbackId: pick(process.env.EXPO_PUBLIC_THINGSPEAK_TALKBACK_ID, "thingspeakTalkbackId"),
+  talkbackKey: pick(process.env.EXPO_PUBLIC_THINGSPEAK_TALKBACK_KEY, "thingspeakTalkbackKey"),
+  results: Number(pick(process.env.EXPO_PUBLIC_THINGSPEAK_RESULTS, "thingspeakResults")) || 200,
 };
 
 /** Mapeamento field<n> → grandeza (espelha o firmware e a web). */
@@ -48,7 +51,7 @@ export const FIELD_MAP = {
   field8: "modo_manual", // 0/1
 };
 
-const useMockFlag = pick("EXPO_PUBLIC_USE_MOCK_DATA", "useMockData");
+const useMockFlag = pick(process.env.EXPO_PUBLIC_USE_MOCK_DATA, "useMockData");
 const mockFlag = useMockFlag === true || useMockFlag === "true";
 
 const hasConfig =
