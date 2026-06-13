@@ -12,6 +12,7 @@ Dashboard React para um sistema de climatização autônoma baseado em ESP32 + T
 |---|---|---|
 | 🌐 **Web** (este repo) | `src/` | React 19 + Vite 8 + Recharts |
 | 📱 **Android APK** | [`mobile/`](mobile/) | Expo SDK 52 + React Native + Victory Native |
+| **Contrato API** | https://projeto-integrador-ten-steel.vercel.app/api-docs/  |
 
 > O app mobile reutiliza ~70% deste código (hooks, constants, mock, regras). Ver [`mobile/README.md`](mobile/README.md) para build do APK.
 
@@ -23,7 +24,7 @@ Dashboard React para um sistema de climatização autônoma baseado em ESP32 + T
 | Gráficos | Recharts 3 |
 | Backend | ThingSpeak (canal de dados + TalkBack para controle) |
 | Hospedagem | Host estático (build `dist/` — Vercel/Netlify/GitHub Pages/etc.) |
-| Hardware | ESP32 + DHT11 + TCRT5000 + LED IR |
+| Hardware | ESP32 + DHT22 + motion-sensor + LED IR |
 
 ## Setup
 
@@ -147,7 +148,7 @@ verdade do mapeamento: [`src/config/thingspeak.js`](src/config/thingspeak.js) (`
 | Field | Grandeza | Observação |
 |---|---|---|
 | `field1` | ocupação | inteiro |
-| `field2` | temp_interna | média dos DHTs internos |
+| `field2` | temp_interna | média do DHT interno |
 | `field3` | temp_externa | DHT externo |
 | `field4` | temp_alvo | 0 = A/C desligado |
 | `field5` | umid_interna | % |
@@ -157,7 +158,7 @@ verdade do mapeamento: [`src/config/thingspeak.js`](src/config/thingspeak.js) (`
 
 ### Controle via TalkBack
 
-O dashboard enfileira comandos em `/talkbacks/<id>/commands.json`; o ESP32
+O dashboard enfileira comandos em `/talkbacks/<id>/commands/execute`; o ESP32
 consome em `/talkbacks/<id>/commands/execute.json` por polling:
 
 | Comando | Efeito |
