@@ -1,0 +1,359 @@
+openapi: 3.0.3
+
+info:
+  title: ClimaControl — Contrato da API (ThingSpeak)
+  version: 1.0.0
+  description: |
+    Contrato dos endpoints do **ThingSpeak** que o sistema ClimaControl consome
+    após a migração do Firebase RTDB. Não é uma API própria: documenta o
+    subconjunto da API REST do ThingSpeak usado pelos três clientes do projeto.
+
+    ### Atores
+    - **Firmware (ESP32 / Wokwi)** — publica leituras (uplink) e consome comandos
+      de controle (downlink). Ver `firmware/climacontrol/sketch.ino`.
+    - **Dashboard web (Vite/React)** — lê o feed por polling e enfileira comandos.
+      Ver `src/services/thingspeak.js`.
+    - **App mobile (Expo/React Native)** — mesmo comportamento do web.
+      Ver `mobile/src/services/thingspeak.js`.
+
+    ### Fluxos
+    - **Uplink (sensores → nuvem):** `GET /update` grava 1 ponto com os 8 fields.
+    - **Downlink de dados (nuvem → app):** `GET /channels/{id}/feeds/...` lê o feed.
+    - **Controle (app → firmware) via fila TalkBack:** o app enfileira em
+      `POST /talkbacks/{id}/commands.json`; o firmware consome em
+      `POST /talkbacks/{id}/commands/execute` por polling.
+
+    ### Mapa dos 8 fields (fonte da verdade do projeto)
+    | field  | nome no canal | grandeza                         |
+    |--------|---------------|----------------------------------|
+    | field1 | ocupacao      | nº de pessoas (inteiro)          |
+    | field2 | temp_interna  | °C                               |
+    | field3 | temp_externa  | °C                               |
+    | field4 | temp_alvo     | °C (0 = A/C desligado)           |
+    | field5 | umid_interna  | %                                |
+    | field6 | umid_externa  | %                                |
+    | field7 | ac_ligado     | 0 ou 1                           |
+    | field8 | modo_manual   | 0 (automático) ou 1 (manual)     |
+
+    ### Autenticação
+    O ThingSpeak autentica por **chave de API** (não por usuário/senha):
+    - **Write API Key** — grava no canal (`GET /update`). Fica só no firmware.
+    - **Read API Key** — lê o feed. Embutida no bundle web/APK (cliente).
+    - **TalkBack API Key** — enfileira e consome comandos de controle.
+
+    Em `GET /update`, a chave vai no query param `api_key`. Nos endpoints TalkBack
+    (POST) a chave vai no corpo `x-www-form-urlencoded`, junto dos demais campos.
+
+  contact:
+    name: ClimaControl PI
+
+servers:
+  - url: https://api.thingspeak.com
+    description: API pública do ThingSpeak (HTTPS — usado pelo dashboard/app)
+  - url: http://api.thingspeak.com
+    description: Mesmo host em HTTP (o firmware usa HTTP para evitar overhead de TLS no ESP32)
+
+tags:
+  - name: Uplink
+    description: Firmware publica leituras no canal
+  - name: Leitura
+    description: Dashboard/app leem o feed do canal
+  - name: Controle (TalkBack)
+    description: Fila de comandos para controlar o A/C
+
+paths:
+  /update:
+    get:
+      tags: [Uplink]
+      operationId: publishReading
+      summary: Publica um ponto de leitura no canal (uplink do firmware)
+      description: |
+        Grava 1 entrada (entry) no canal com os 8 fields. Chamado pelo firmware
+        a cada ~16 s (respeitando o limite de 1 escrita / 15 s do plano gratuito).
+
+        **Resposta:** texto puro com o `entry_id` da entrada criada (ex.: `17`).
+        Retorna `0` quando a escrita é recusada por rate limit.
+      parameters:
+        - name: api_key
+          in: query
+          required: true
+          description: Write API Key do canal.
+          schema: { type: string, example: "YOUR_WRITE_API_KEY" }
+        - name: field1
+          in: query
+          description: ocupacao — nº de pessoas (inteiro)
+          schema: { type: integer, example: 3 }
+        - name: field2
+          in: query
+          description: temp_interna (°C)
+          schema: { type: number, format: float, example: 24.6 }
+        - name: field3
+          in: query
+          description: temp_externa (°C)
+          schema: { type: number, format: float, example: 31.2 }
+        - name: field4
+          in: query
+          description: temp_alvo (°C; 0 = A/C desligado)
+          schema: { type: number, format: float, example: 22.0 }
+        - name: field5
+          in: query
+          description: umid_interna (%)
+          schema: { type: number, format: float, example: 55.0 }
+        - name: field6
+          in: query
+          description: umid_externa (%)
+          schema: { type: number, format: float, example: 70.0 }
+        - name: field7
+          in: query
+          description: ac_ligado (0/1)
+          schema: { type: integer, enum: [0, 1], example: 1 }
+        - name: field8
+          in: query
+          description: modo_manual (0 = automático, 1 = manual)
+          schema: { type: integer, enum: [0, 1], example: 0 }
+      responses:
+        "200":
+          description: |
+            Entrada criada — corpo é o `entry_id` em texto puro.
+            `0` indica recusa por rate limit (< 15 s desde a última escrita).
+          content:
+            text/plain:
+              schema: { type: string, example: "17" }
+
+  /channels/{channelId}/feeds/last.json:
+    get:
+      tags: [Leitura]
+      operationId: getLatestFeed
+      summary: Último ponto do canal (objeto `live` do dashboard)
+      description: |
+        Retorna a entrada mais recente do canal. Usado por `getLatest()` no
+        dashboard/app. **Canal vazio** responde a string `-1` (ou `0`) em vez de
+        um objeto — o cliente trata isso como "sem dados".
+      parameters:
+        - $ref: "#/components/parameters/ChannelId"
+        - name: api_key
+          in: query
+          required: true
+          description: Read API Key do canal.
+          schema: { type: string, example: "YOUR_READ_API_KEY" }
+      responses:
+        "200":
+          description: Último feed do canal (ou string indicando canal vazio).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Feed"
+                  - type: string
+                    description: "`-1` ou `0` quando o canal ainda não tem entradas."
+                    example: "-1"
+
+  /channels/{channelId}/feeds.json:
+    get:
+      tags: [Leitura]
+      operationId: getFeedHistory
+      summary: Série temporal do canal (gráficos do histórico)
+      description: |
+        Retorna os últimos `results` pontos (mais recentes primeiro no ThingSpeak;
+        o cliente reordena por timestamp). Usado por `getHistory()`.
+      parameters:
+        - $ref: "#/components/parameters/ChannelId"
+        - name: api_key
+          in: query
+          required: true
+          description: Read API Key do canal.
+          schema: { type: string }
+        - name: results
+          in: query
+          description: Número de pontos a retornar (default do projeto = 200).
+          schema: { type: integer, default: 200, minimum: 1, maximum: 8000, example: 200 }
+      responses:
+        "200":
+          description: Canal + array de feeds.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedsResponse" }
+
+  /talkbacks/{talkbackId}/commands.json:
+    post:
+      tags: [Controle (TalkBack)]
+      operationId: enqueueCommand
+      summary: Enfileira um comando de controle (dashboard → fila)
+      description: |
+        O dashboard/app enfileira um comando que o firmware consome no próximo
+        polling. `position: 1` coloca no topo da fila (ação mais recente primeiro).
+        Usado por `sendCommand()`.
+      parameters:
+        - $ref: "#/components/parameters/TalkBackId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [api_key, command_string]
+              properties:
+                api_key:
+                  type: string
+                  description: TalkBack API Key.
+                  example: "YOUR_TALKBACK_API_KEY"
+                command_string:
+                  $ref: "#/components/schemas/CommandString"
+                position:
+                  type: integer
+                  description: Posição na fila (1 = topo).
+                  default: 1
+                  example: 1
+      responses:
+        "200":
+          description: Comando enfileirado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TalkBackCommand" }
+
+  /talkbacks/{talkbackId}/commands/execute:
+    post:
+      tags: [Controle (TalkBack)]
+      operationId: executeNextCommand
+      summary: Consome o próximo comando da fila (firmware → polling)
+      description: |
+        O firmware chama por polling (a cada ~15 s). Retorna em **texto puro** o
+        `command_string` do próximo comando da fila e o remove; **corpo vazio**
+        quando não há comandos. Usado por `consultarTalkBack()` no firmware.
+      parameters:
+        - $ref: "#/components/parameters/TalkBackId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [api_key]
+              properties:
+                api_key:
+                  type: string
+                  description: TalkBack API Key.
+                  example: "YOUR_TALKBACK_API_KEY"
+      responses:
+        "200":
+          description: |
+            `command_string` do próximo comando (texto puro) ou corpo vazio se a
+            fila estiver vazia.
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/CommandString"
+
+components:
+  parameters:
+    ChannelId:
+      name: channelId
+      in: path
+      required: true
+      description: Channel ID numérico do canal de dados.
+      schema: { type: integer, example: 3403678 }
+    TalkBackId:
+      name: talkbackId
+      in: path
+      required: true
+      description: ID da fila TalkBack.
+      schema: { type: integer, example: 57017 }
+
+  schemas:
+    Feed:
+      type: object
+      description: |
+        Uma entrada do canal. **Atenção:** o ThingSpeak devolve todos os fields
+        como **string** (mesmo os numéricos); os clientes convertem com `Number()`.
+        Os apelidos lógicos abaixo são o mapeamento do projeto.
+      properties:
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-06-12T22:13:38Z"
+        entry_id:
+          type: integer
+          example: 17
+        field1: { type: string, description: "ocupacao — nº de pessoas",            example: "3" }
+        field2: { type: string, description: "temp_interna (°C)",                    example: "24.6" }
+        field3: { type: string, description: "temp_externa (°C)",                    example: "31.2" }
+        field4: { type: string, description: "temp_alvo (°C; 0 = desligado)",        example: "22.0" }
+        field5: { type: string, description: "umid_interna (%)",                     example: "55.0" }
+        field6: { type: string, description: "umid_externa (%)",                     example: "70.0" }
+        field7: { type: string, description: "ac_ligado (0/1)",                      example: "1" }
+        field8:
+          type: string
+          nullable: true
+          description: "modo_manual (0/1). Pode vir `null` em entradas antigas."
+          example: "0"
+
+    FeedsResponse:
+      type: object
+      properties:
+        channel: { $ref: "#/components/schemas/Channel" }
+        feeds:
+          type: array
+          items: { $ref: "#/components/schemas/Feed" }
+
+    Channel:
+      type: object
+      description: Metadados do canal (inclui os nomes dos fields habilitados).
+      properties:
+        id: { type: integer, example: 3403678 }
+        name: { type: string, example: "Moviment" }
+        field1: { type: string, example: "ocupacao" }
+        field2: { type: string, example: "temp_interna" }
+        field3: { type: string, example: "temp_externa" }
+        field4: { type: string, example: "temp_alvo" }
+        field5: { type: string, example: "umid_interna" }
+        field6: { type: string, example: "umid_externa" }
+        field7: { type: string, example: "ac_ligado" }
+        field8: { type: string, example: "modo_manual" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        last_entry_id: { type: integer, example: 17 }
+
+    CommandString:
+      type: string
+      description: |
+        Vocabulário de comandos que o firmware entende (parse em
+        `processarComandoManual`). Não é um enum rígido no ThingSpeak — é uma
+        string livre; estes são os valores que o dashboard envia e o firmware trata.
+      enum:
+        - AC_ON
+        - AC_OFF
+        - MANUAL_ON
+        - MANUAL_OFF
+        - "TARGET:22"
+      x-comandos:
+        AC_ON: "Liga o A/C (retoma resfriamento até o alvo); entra em modo manual."
+        AC_OFF: "Desliga o A/C (para de resfriar); mantém modo manual."
+        MANUAL_ON: "Entra em modo manual sem mexer no alvo."
+        MANUAL_OFF: "Volta ao modo automático (equivale a AUTO)."
+        "TARGET:<n>": "Define a temperatura alvo n (18–30 °C); entra em modo manual."
+
+    TalkBackCommand:
+      type: object
+      description: Objeto de comando retornado ao enfileirar.
+      properties:
+        id: { type: integer, example: 9912834 }
+        command_string: { $ref: "#/components/schemas/CommandString" }
+        position: { type: integer, example: 1 }
+        executed_at: { type: string, format: date-time, nullable: true, example: null }
+        created_at: { type: string, format: date-time, example: "2026-06-12T22:14:00Z" }
+
+    ClimaControlReading:
+      type: object
+      description: |
+        Visão **lógica** de uma leitura, como os clientes a representam após
+        converter os fields (objeto `live`). Não é um payload do ThingSpeak —
+        documenta a semântica para quem consome o projeto.
+      properties:
+        pessoas:    { type: integer, description: "field1", example: 3 }
+        tempInt:    { type: number, description: "field2 (°C)", example: 24.6 }
+        tempExt:    { type: number, description: "field3 (°C)", example: 31.2 }
+        tempAlvo:   { type: number, description: "field4 (°C; 0 = desligado)", example: 22.0 }
+        umidInt:    { type: number, description: "field5 (%)", example: 55.0 }
+        umidExt:    { type: number, description: "field6 (%)", example: 70.0 }
+        acLigado:   { type: boolean, description: "field7 (>=1)", example: true }
+        modoManual: { type: boolean, description: "field8 (>=1)", example: false }

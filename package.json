@@ -14,7 +14,7 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{js,jsx}": "eslint --fix"
+    "*.{js,jsx}": "eslint --fix --no-warn-ignored"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
