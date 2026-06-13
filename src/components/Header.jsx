@@ -26,13 +26,13 @@ export function Header({
         <img
           className="header__logo"
           src="/logo.svg"
-          alt="Moviment"
+          alt="Movement"
           width={72}
           height={72}
         />
         <div>
           <h1 className="header__title">
-            <span className="header__title-accent">movi</span>
+            <span className="header__title-accent">move</span>
             <span className="header__title-faded">ment</span>
           </h1>
           <p className="header__subtitle">

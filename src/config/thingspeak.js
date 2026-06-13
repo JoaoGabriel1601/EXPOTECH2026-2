@@ -1,5 +1,5 @@
 /**
- * Configuração do ThingSpeak para o dashboard Moviment.
+ * Configuração do ThingSpeak para o dashboard Movement.
  *
  * Substitui o antigo src/config/firebase.js. O ESP32 (firmware Wokwi) publica
  * as leituras num canal ThingSpeak; o dashboard lê o feed por polling e envia
@@ -61,12 +61,12 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
   if (useMockData) {
     console.info(
       mockReason === "flag"
-        ? "[Moviment] VITE_USE_MOCK_DATA=true — modo simulação ativo."
-        : "[Moviment] ThingSpeak não configurado — modo simulação ativo."
+        ? "[Movement] VITE_USE_MOCK_DATA=true — modo simulação ativo."
+        : "[Movement] ThingSpeak não configurado — modo simulação ativo."
     );
   } else {
     console.info(
-      `[Moviment] Lendo canal ThingSpeak ${thingSpeakConfig.channelId}` +
+      `[Movement] Lendo canal ThingSpeak ${thingSpeakConfig.channelId}` +
         (controlEnabled
           ? " (controle via TalkBack ativo)."
           : " (sem TalkBack — controle desativado).")

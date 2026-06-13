@@ -1,10 +1,10 @@
 openapi: 3.0.3
 
 info:
-  title: Moviment — Contrato da API (ThingSpeak)
+  title: Movement — Contrato da API (ThingSpeak)
   version: 1.0.0
   description: |
-    Contrato dos endpoints do **ThingSpeak** que o sistema Moviment consome
+    Contrato dos endpoints do **ThingSpeak** que o sistema Movement consome
     após a migração do Firebase RTDB. Não é uma API própria: documenta o
     subconjunto da API REST do ThingSpeak usado pelos três clientes do projeto.
 
@@ -45,7 +45,7 @@ info:
     (POST) a chave vai no corpo `x-www-form-urlencoded`, junto dos demais campos.
 
   contact:
-    name: Moviment PI
+    name: Movement PI
 
 servers:
   - url: https://api.thingspeak.com
@@ -300,7 +300,7 @@ components:
       description: Metadados do canal (inclui os nomes dos fields habilitados).
       properties:
         id: { type: integer, example: 3403678 }
-        name: { type: string, example: "Moviment" }
+        name: { type: string, example: "Movement" }
         field1: { type: string, example: "ocupacao" }
         field2: { type: string, example: "temp_interna" }
         field3: { type: string, example: "temp_externa" }
@@ -342,7 +342,7 @@ components:
         executed_at: { type: string, format: date-time, nullable: true, example: null }
         created_at: { type: string, format: date-time, example: "2026-06-12T22:14:00Z" }
 
-    MovimentReading:
+    MovementReading:
       type: object
       description: |
         Visão **lógica** de uma leitura, como os clientes a representam após

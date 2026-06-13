@@ -97,7 +97,7 @@ function drawFooter(doc) {
     pageHeight - 8
   );
   doc.text(
-    "Moviment",
+    "Movement",
     pageWidth - marginX,
     pageHeight - 8,
     { align: "right" }

@@ -1,4 +1,4 @@
-# Configuração do ThingSpeak — Moviment
+# Configuração do ThingSpeak — Movement
 
 Guia para criar o canal e a fila TalkBack que o firmware (ESP32/Wokwi), o
 dashboard web e o app mobile usam. Substitui o antigo `FIREBASE_SETUP.md`.
@@ -6,7 +6,7 @@ dashboard web e o app mobile usam. Substitui o antigo `FIREBASE_SETUP.md`.
 ## 1. Criar a conta e o canal de dados
 
 1. Crie uma conta gratuita em <https://thingspeak.com> (MathWorks).
-2. **Channels → New Channel**. Dê um nome (ex.: `Moviment`) e habilite os
+2. **Channels → New Channel**. Dê um nome (ex.: `Movement`) e habilite os
    **8 fields**, nesta ordem exata (é o `FIELD_MAP` em `src/config/thingspeak.js`):
 
    | Field | Nome sugerido | Conteúdo |

@@ -40,7 +40,7 @@ function HeaderComponent({
         <Logo size={64} withBackground />
         <View style={styles.brandText}>
           <Text style={styles.title} numberOfLines={1}>
-            <Text style={styles.titleAccent}>movi</Text>
+            <Text style={styles.titleAccent}>move</Text>
             <Text style={styles.titleFaded}>ment</Text>
           </Text>
           <Text style={styles.subtitle} numberOfLines={1}>

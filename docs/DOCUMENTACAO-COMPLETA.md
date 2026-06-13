@@ -2,7 +2,7 @@
 
 <br/><br/><br/>
 
-# Moviment
+# Movement
 
 ## Documentação Técnica Completa
 
@@ -17,7 +17,7 @@
 
 | | |
 |---|---|
-| **Nome do projeto** | Moviment |
+| **Nome do projeto** | Movement |
 | **Instituição** | UNIFECAF |
 | **Versão deste documento** | 2.0 (migração para ThingSpeak) |
 | **Repositório** | https://github.com/JoaoGabriel1601/Projeto-Integrador |
@@ -62,7 +62,7 @@
 
 ## 1. Resumo executivo
 
-O **Moviment** é um sistema de **climatização autônoma** para ambientes coletivos (salas de aula, escritórios). Ele mede em tempo real a **ocupação** (número de pessoas), a **temperatura interna e externa** e a **umidade**, e calcula automaticamente a **temperatura-alvo ideal** do ar-condicionado conforme a quantidade de pessoas e o calor externo — economizando energia ao evitar que o A/C opere no mesmo set-point com 2 ou com 40 pessoas.
+O **Movement** é um sistema de **climatização autônoma** para ambientes coletivos (salas de aula, escritórios). Ele mede em tempo real a **ocupação** (número de pessoas), a **temperatura interna e externa** e a **umidade**, e calcula automaticamente a **temperatura-alvo ideal** do ar-condicionado conforme a quantidade de pessoas e o calor externo — economizando energia ao evitar que o A/C opere no mesmo set-point com 2 ou com 40 pessoas.
 
 O projeto é um **monorepo** com **quatro frentes** que se comunicam através do **ThingSpeak**:
 
@@ -989,7 +989,7 @@ npm run check:sync      # sincronia web/mobile
 O projeto integra **quatro áreas**, cada uma com contribuição concreta:
 
 ```
-                                Moviment
+                                Movement
         ┌──────────────┬──────────────────┬──────────────────┬──────────────┐
         ▼              ▼                  ▼                  ▼              ▼
   Eletrônica /     IA / Pesquisa     Engenharia de        UX / UI
@@ -1103,4 +1103,4 @@ D2    ──────► LED de status (via resistor)
 
 ---
 
-<div align="center"><strong>Moviment — UNIFECAF</strong><br/>Climatização autônoma · ESP32 + ThingSpeak + React/Expo.</div>
+<div align="center"><strong>Movement — UNIFECAF</strong><br/>Climatização autônoma · ESP32 + ThingSpeak + React/Expo.</div>

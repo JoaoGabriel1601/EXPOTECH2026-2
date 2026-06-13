@@ -1,7 +1,7 @@
-# Moviment — Dashboard de Climatização Autônoma
+# Movement — Dashboard de Climatização Autônoma
 
 <p align="center">
-  <img src="public/favicon.svg" width="120" alt="Moviment logo" />
+  <img src="public/favicon.svg" width="120" alt="Movement logo" />
 </p>
 
 Dashboard React para um sistema de climatização autônoma baseado em ESP32 + ThingSpeak. Monitora ocupação, temperatura interna/externa e umidade, e calcula a temperatura alvo do A/C automaticamente conforme a quantidade de pessoas e o calor externo. O ESP32 (simulado no Wokwi) publica as leituras num canal ThingSpeak; o dashboard lê o feed por polling e controla o A/C pela fila TalkBack.
