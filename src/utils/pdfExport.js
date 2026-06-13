@@ -97,7 +97,7 @@ function drawFooter(doc) {
     pageHeight - 8
   );
   doc.text(
-    "climacontrol",
+    "Moviment",
     pageWidth - marginX,
     pageHeight - 8,
     { align: "right" }

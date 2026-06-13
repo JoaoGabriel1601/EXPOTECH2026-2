@@ -1,6 +1,6 @@
-# 📱 ClimaControl Mobile
+# 📱 Moviment Mobile
 
-App Android nativo do **ClimaControl** — dashboard de climatização autônoma — feito em **React Native + Expo**, reutilizando ~70% da lógica do dashboard web (hooks, constants, utils).
+App Android nativo do **Moviment** — dashboard de climatização autônoma — feito em **React Native + Expo**, reutilizando ~70% da lógica do dashboard web (hooks, constants, utils).
 
 > Lê os dados de um canal **ThingSpeak** (uplink do ESP32) e controla o A/C pela fila **TalkBack**. Se as chaves não estiverem preenchidas (`app.json` → `expo.extra` ainda com placeholders), cai em modo mock automaticamente — você pode testar agora mesmo sem configurar nada. O app abre direto, sem tela de login.
 

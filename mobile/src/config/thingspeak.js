@@ -74,12 +74,12 @@ if (__DEV__) {
   if (useMockData) {
     console.info(
       mockReason === "flag"
-        ? "[ClimaControl] EXPO_PUBLIC_USE_MOCK_DATA=true — modo simulação ativo."
-        : "[ClimaControl] ThingSpeak não configurado — modo simulação ativo."
+        ? "[Moviment] EXPO_PUBLIC_USE_MOCK_DATA=true — modo simulação ativo."
+        : "[Moviment] ThingSpeak não configurado — modo simulação ativo."
     );
   } else {
     console.info(
-      `[ClimaControl] Lendo canal ThingSpeak ${thingSpeakConfig.channelId}` +
+      `[Moviment] Lendo canal ThingSpeak ${thingSpeakConfig.channelId}` +
         (controlEnabled ? " (controle via TalkBack ativo)." : " (sem TalkBack).")
     );
   }

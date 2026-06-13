@@ -39,6 +39,10 @@ function HeaderComponent({
       <View style={styles.brandRow}>
         <Logo size={64} withBackground />
         <View style={styles.brandText}>
+          <Text style={styles.title} numberOfLines={1}>
+            <Text style={styles.titleAccent}>movi</Text>
+            <Text style={styles.titleFaded}>ment</Text>
+          </Text>
           <Text style={styles.subtitle} numberOfLines={1}>
             {user?.email
               ? `Olá, ${user.displayName || user.email}`
@@ -102,6 +106,9 @@ const makeStyles = (theme) =>
       gap: spacing.md,
     },
     brandText: { flex: 1 },
+    title: { ...typography.h2 },
+    titleAccent: { color: theme.accent, fontWeight: "700" },
+    titleFaded: { color: theme.textMuted, fontWeight: "700" },
     subtitle: { ...typography.caption, color: theme.textMuted, marginTop: 2 },
     actions: { flexDirection: "row", gap: spacing.sm },
     iconBtn: {
