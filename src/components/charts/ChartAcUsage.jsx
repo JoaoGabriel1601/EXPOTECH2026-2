@@ -37,13 +37,13 @@ function buildUsageData(data) {
       const segEnd = b.timestamp;
       const segDur = Math.max(0, segEnd - segStart);
       totalTime += segDur;
-      if (a.tempAlvo > 0) onTime += segDur;
+      if (a.acLigado ?? a.tempAlvo > 0) onTime += segDur;
     }
 
     const pct =
       totalTime > 0
         ? (onTime / totalTime) * 100
-        : cur.tempAlvo > 0
+        : (cur.acLigado ?? cur.tempAlvo > 0)
         ? 100
         : 0;
     return { ...cur, acUsagePct: Math.round(pct) };

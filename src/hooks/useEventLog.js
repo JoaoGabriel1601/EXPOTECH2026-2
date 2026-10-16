@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useMockData } from "../config/thingspeak";
-import { getHistory } from "../services/thingspeak";
+import { useMockData } from "../config/api";
+import { getHistory } from "../services/movementApi";
 import { OCCUPANCY_THRESHOLDS } from "../constants";
 
 const MOCK_EVENTS = [
@@ -12,10 +12,8 @@ const MOCK_EVENTS = [
 const POLL_MS = 60_000;
 
 /**
- * O ThingSpeak não tem um conceito de "eventos" como o Firebase /eventos.
- * Em vez disso derivamos os eventos no cliente varrendo o histórico do canal
- * e detectando transições relevantes (A/C ligou/desligou, ocupação alta,
- * temperatura estabilizada).
+ * Primeiro marco: eventos derivados do histórico da API. A persistência de
+ * eventos e confirmação de comandos será adicionada no próximo marco.
  */
 function deriveEvents(history) {
   const events = [];
@@ -23,18 +21,19 @@ function deriveEvents(history) {
     const prev = history[i - 1];
     const cur = history[i];
 
-    // A/C: temp_alvo cruzando 0 indica liga/desliga.
-    if (prev.tempAlvo === 0 && cur.tempAlvo > 0) {
+    const wasOn = prev.acLigado ?? prev.tempAlvo > 0;
+    const isOn = cur.acLigado ?? cur.tempAlvo > 0;
+    if (!wasOn && isOn) {
       events.push({
         id: `ac_on-${cur.timestamp}`,
-        type: "ac_ligado_auto",
+        type: cur.modoManual ? "ac_ligado_manual" : "ac_ligado_auto",
         timestamp: cur.timestamp,
         payload: { temp: cur.tempAlvo },
       });
-    } else if (prev.tempAlvo > 0 && cur.tempAlvo === 0) {
+    } else if (wasOn && !isOn) {
       events.push({
         id: `ac_off-${cur.timestamp}`,
-        type: "ac_desligado_auto",
+        type: cur.modoManual ? "ac_desligado_manual" : "ac_desligado_auto",
         timestamp: cur.timestamp,
       });
     }

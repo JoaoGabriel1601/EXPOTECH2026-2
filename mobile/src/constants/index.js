@@ -90,7 +90,7 @@ export function computeAcUsage(history) {
       continue;
     const delta = next.timestamp - cur.timestamp;
     if (delta <= 0) continue;
-    if (cur.tempAlvo > 0) onMs += delta;
+    if (cur.acLigado ?? cur.tempAlvo > 0) onMs += delta;
   }
   const first = history[0].timestamp;
   const last = history[history.length - 1].timestamp;

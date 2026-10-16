@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Header } from "./components/Header";
 import { MetricCard } from "./components/MetricCard";
 import { SectionTitle } from "./components/SectionTitle";
@@ -18,7 +18,9 @@ import {
   BrainIcon,
 } from "./components/icons";
 import { useSensorData } from "./hooks/useSensorData";
-import { useMockData } from "./config/thingspeak";
+import { useMockData } from "./config/api";
+import { OperatorLogin } from "./components/OperatorLogin";
+import { clearSession, getSessionToken } from "./services/movementApi";
 import {
   CARD_COLORS,
   CARD_COLORS_EFFICIENCY,
@@ -87,6 +89,22 @@ function describeTempStatus(live) {
 }
 
 export default function App() {
+  const [authenticated, setAuthenticated] = useState(() => Boolean(getSessionToken()));
+  useEffect(() => {
+    const expired = () => setAuthenticated(false);
+    window.addEventListener("movement:session-expired", expired);
+    return () => window.removeEventListener("movement:session-expired", expired);
+  }, []);
+  if (!useMockData && !authenticated) {
+    return <OperatorLogin onLogin={() => setAuthenticated(true)} />;
+  }
+  return <Dashboard onSignOut={useMockData ? undefined : () => {
+    clearSession();
+    setAuthenticated(false);
+  }} />;
+}
+
+function Dashboard({ onSignOut }) {
   const {
     history,
     live,
@@ -108,7 +126,7 @@ export default function App() {
   const tempAlvoSub = useMemo(() => {
     if (!live || live.tempAlvo === 0) return "Sem alvo";
     if (manualMode) return "Modo manual";
-    if (ai?.isAIActive) {
+    if (useMockData && ai?.isAIActive) {
       if (ai.lastUpdate) {
         const secs = Math.round((Date.now() - ai.lastUpdate) / 1000);
         return `IA · há ${secs}s`;
@@ -123,8 +141,8 @@ export default function App() {
   const aiComparisonData = useMemo(() => {
     return history.map((h) => ({
       ...h,
-      tempAlvoIA: h.tempAlvoIA !== undefined ? h.tempAlvoIA : (h.tempAlvo > 0 ? h.tempAlvo : null),
-      tempAlvoRegra: h.tempAlvoRegra !== undefined ? h.tempAlvoRegra : (h.tempAlvo > 0 ? h.tempAlvo : null),
+      tempAlvoIA: h.tempAlvoIA ?? null,
+      tempAlvoRegra: h.tempAlvoRegra ?? null,
     }));
   }, [history]);
 
@@ -159,6 +177,7 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
+          onSignOut={onSignOut}
         />
         <div className="error-state" role="alert">
           Erro ao carregar dados: {error.message}
@@ -174,6 +193,7 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
+          onSignOut={onSignOut}
         />
         <div className="metric-grid" aria-busy="true">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -191,12 +211,13 @@ export default function App() {
           acOn={false}
           manualMode={false}
           connectionStatus={connectionStatus}
+          onSignOut={onSignOut}
         />
         <div className="empty-state" role="status">
           <h2>Aguardando dados dos sensores</h2>
           <p>
-            Conexão com o ThingSpeak estabelecida, mas o canal ainda não tem
-            leituras. Assim que o ESP32 publicar a primeira entrada, o dashboard
+            Conexão com a API estabelecida, mas o ambiente ainda não tem
+            leituras. Assim que o dispositivo publicar a primeira entrada, o dashboard
             atualiza automaticamente.
           </p>
           {!useMockData && (
@@ -221,6 +242,7 @@ export default function App() {
         manualMode={manualMode}
         connectionStatus={connectionStatus}
         onExport={handleExport}
+        onSignOut={onSignOut}
       />
 
       <section className="metric-grid" aria-label="Métricas atuais">
@@ -344,11 +366,15 @@ export default function App() {
 
       <SectionTitle>IA vs. regras fixas</SectionTitle>
       <AIInsightsPanel ai={ai} live={live} />
-      <div className="panel panel--chart">
-        <Suspense fallback={<ChartFallback />}>
-          <ChartAIComparison data={aiComparisonData} />
-        </Suspense>
-      </div>
+      {aiComparisonData.some((point) => point.tempAlvoIA !== null || point.tempAlvoRegra !== null) ? (
+        <div className="panel panel--chart">
+          <Suspense fallback={<ChartFallback />}>
+            <ChartAIComparison data={aiComparisonData} />
+          </Suspense>
+        </div>
+      ) : (
+        <p className="empty-state">O histórico ainda não contém recomendações para comparação.</p>
+      )}
 
       <SectionTitle>Controle manual do A/C</SectionTitle>
       <div className="panel panel--padded">
@@ -382,7 +408,7 @@ export default function App() {
 
       <footer className="footer">
         Sistema de climatização autônoma — Projeto de faculdade — ESP32 +
-        ThingSpeak + React
+        API própria + PostgreSQL + React
       </footer>
     </main>
   );

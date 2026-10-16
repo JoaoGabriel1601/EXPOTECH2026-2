@@ -1,5 +1,11 @@
 # Movement — Dashboard de Climatização Autônoma
 
+> **Implementação em andamento — API própria:** o dashboard web já possui integração
+> com Python/FastAPI e PostgreSQL. Comece por [backend/README.md](backend/README.md)
+> e acompanhe os marcos em [docs/IMPLEMENTACAO-EDITAL.md](docs/IMPLEMENTACAO-EDITAL.md).
+> O texto abaixo descreve a integração anterior com ThingSpeak, ainda utilizada pelo
+> firmware e mobile durante a migração. O backend novo ainda não foi publicado na VPS.
+
 <p align="center">
   <img src="public/favicon.svg" width="120" alt="Movement logo" />
 </p>

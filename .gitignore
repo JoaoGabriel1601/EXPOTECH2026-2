@@ -31,3 +31,13 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Python / banco temporário de testes
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+.ruff_cache/
+.local/
+.coverage
+htmlcov/

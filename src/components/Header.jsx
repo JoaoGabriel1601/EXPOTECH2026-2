@@ -1,7 +1,7 @@
 import { StatusPill } from "./StatusPill";
 import { ThemeToggle } from "./ThemeToggle";
 import { DownloadIcon, LogoutIcon } from "./icons";
-import { useMockData } from "../config/thingspeak";
+import { useMockData } from "../config/api";
 
 export function Header({
   acOn,
@@ -16,6 +16,10 @@ export function Header({
     ? "Modo simulação"
     : connectionStatus === "online"
       ? "Ao vivo"
+      : connectionStatus === "stale"
+        ? "Leitura antiga"
+      : connectionStatus === "waiting"
+        ? "Aguardando leituras"
       : connectionStatus === "connecting"
         ? "Conectando..."
         : "Offline";
@@ -50,7 +54,7 @@ export function Header({
           aria-label={`Status da conexão: ${liveLabel}`}
           title={
             isMock
-              ? "Dados simulados — defina VITE_USE_MOCK_DATA=false para conectar ao ThingSpeak"
+              ? "Dados simulados"
               : undefined
           }
         >

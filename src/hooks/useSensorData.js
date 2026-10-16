@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useMockData, controlEnabled } from "../config/thingspeak";
+import { useMockData, controlEnabled } from "../config/api";
 import {
   getLatest,
   getHistory,
   sendCommand,
   COMMANDS,
-} from "../services/thingspeak";
+} from "../services/movementApi";
 import { generateHistory, nextLiveSample } from "../utils/mockData";
 import {
   UPDATE_INTERVAL_MS,
@@ -15,14 +15,13 @@ import {
 } from "../constants";
 import { useClimateAI } from "./useClimateAI";
 
-// Intervalo de polling do feed. O plano gratuito do ThingSpeak aceita uma
-// escrita a cada 15s, então não adianta ler mais rápido que isso.
+// Consultas à API própria; publicação e consulta têm temporizadores independentes.
 const POLL_INTERVAL_MS = 15_000;
 // O histórico completo é mais pesado; recarregamos com menos frequência.
 const HISTORY_REFRESH_MS = 60_000;
 
 export function useSensorData() {
-  const initialHistory = useMockData ? generateHistory() : [];
+  const [initialHistory] = useState(() => useMockData ? generateHistory() : []);
   const [history, setHistory] = useState(initialHistory);
   const [live, setLive] = useState(
     initialHistory[initialHistory.length - 1] ?? null
@@ -74,7 +73,7 @@ export function useSensorData() {
     return () => clearInterval(interval);
   }, []);
 
-  // ---- Modo real: polling do feed ThingSpeak ----------------------------
+  // ---- Modo real: consultas à API Movement ------------------------------
   useEffect(() => {
     if (useMockData) return;
 
@@ -93,7 +92,7 @@ export function useSensorData() {
         const snapshot = await getLatest();
         if (cancelled) return;
         applyLive(snapshot);
-        setConnectionStatus("online");
+        setConnectionStatus(!snapshot ? "waiting" : snapshot.isStale ? "stale" : "online");
         setError(null);
       } catch (err) {
         if (cancelled) return;
@@ -107,7 +106,7 @@ export function useSensorData() {
     const refreshHistory = async () => {
       try {
         const points = await getHistory();
-        if (!cancelled && points.length) {
+        if (!cancelled) {
           setHistory(points.slice(-HISTORY_MAX_POINTS));
         }
       } catch {
@@ -130,8 +129,7 @@ export function useSensorData() {
   // ---- IA no modo simulação ---------------------------------------------
   // No modo real, a IA é apenas indicativa no dashboard (o card mostra
   // ai.tempAlvoIA). Quem decide o alvo é o firmware pela regra fixa, ou o
-  // usuário pelo controle manual. Não enfileiramos comandos de IA no TalkBack
-  // para não poluir a fila de controle.
+  // usuário pelo controle manual. Recomendações não geram comandos remotos.
   useEffect(() => {
     if (!useMockData) return;
     if (!ai.isAIActive || ai.tempAlvoIA === null) return;
@@ -160,10 +158,10 @@ export function useSensorData() {
     }
   }, [live, manualMode]);
 
-  // ---- Envio de comando de controle (TalkBack) --------------------------
+  // ---- Controle remoto (ainda desabilitado nesta etapa) -----------------
   const sendControl = useCallback(async (command) => {
     if (!controlEnabled) {
-      return { ok: false, error: new Error("Controle indisponível (TalkBack)") };
+      return { ok: false, error: new Error("Controle ainda indisponível na API") };
     }
     try {
       await sendCommand(command);
@@ -183,9 +181,6 @@ export function useSensorData() {
         );
         return { ok: true };
       }
-      // Atualização otimista — o próximo polling reconcilia com o ESP.
-      setAcOnState(on);
-      setManualModeState(true);
       return sendControl(on ? COMMANDS.acOn : COMMANDS.acOff);
     },
     [sendControl]
@@ -200,9 +195,6 @@ export function useSensorData() {
         setLive((prev) => (prev ? { ...prev, tempAlvo: temp } : prev));
         return { ok: true };
       }
-      setManualTarget(temp);
-      setManualModeState(true);
-      setAcOnState(true);
       return sendControl(COMMANDS.target(temp));
     },
     [sendControl]
@@ -214,7 +206,6 @@ export function useSensorData() {
         setManualModeState(manual);
         return { ok: true };
       }
-      setManualModeState(manual);
       return sendControl(manual ? COMMANDS.manualOn : COMMANDS.manualOff);
     },
     [sendControl]

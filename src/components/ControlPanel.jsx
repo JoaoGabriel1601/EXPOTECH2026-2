@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { PowerIcon, PlusIcon, MinusIcon } from "./icons";
 import { MIN_TARGET_TEMP } from "../constants";
+import { useMockData, controlEnabled } from "../config/api";
 
 const MAX_TARGET_TEMP = 28;
 
@@ -14,6 +15,7 @@ export function ControlPanel({
   onSetManualMode,
 }) {
   const [busy, setBusy] = useState(false);
+  const disabled = busy || (!useMockData && !controlEnabled);
   const [feedback, setFeedback] = useState(null);
   const [localTemp, setLocalTemp] = useState(
     manualTarget || targetTemp || 22
@@ -80,7 +82,7 @@ export function ControlPanel({
             type="button"
             className={`btn ${acOn ? "btn--danger" : "btn--success"}`}
             onClick={onTogglePower}
-            disabled={busy}
+            disabled={disabled}
             aria-label={acOn ? "Desligar A/C" : "Ligar A/C"}
           >
             <PowerIcon /> {acOn ? "Desligar" : "Ligar"}
@@ -89,7 +91,7 @@ export function ControlPanel({
             type="button"
             className={`btn ${manualMode ? "btn--primary" : ""}`}
             onClick={onToggleManual}
-            disabled={busy}
+            disabled={disabled}
             aria-pressed={manualMode}
           >
             {manualMode ? "Modo manual" : "Modo automático"}
@@ -108,7 +110,7 @@ export function ControlPanel({
             type="button"
             className="temp-stepper__btn"
             onClick={() => onChangeTemp(-1)}
-            disabled={busy || localTemp <= MIN_TARGET_TEMP}
+            disabled={disabled || localTemp <= MIN_TARGET_TEMP}
             aria-label="Diminuir 1 grau"
           >
             <MinusIcon width={14} height={14} />
@@ -118,13 +120,16 @@ export function ControlPanel({
             type="button"
             className="temp-stepper__btn"
             onClick={() => onChangeTemp(1)}
-            disabled={busy || localTemp >= MAX_TARGET_TEMP}
+            disabled={disabled || localTemp >= MAX_TARGET_TEMP}
             aria-label="Aumentar 1 grau"
           >
             <PlusIcon width={14} height={14} />
           </button>
         </div>
-        {!manualMode && (
+        {!useMockData && !controlEnabled && (
+          <p className="metric-card__sub">Controle remoto em preparação. Monitoramento disponível.</p>
+        )}
+        {!manualMode && (useMockData || controlEnabled) && (
           <p className="metric-card__sub">
             Em modo automático — ajustar o alvo ativa o controle manual.
           </p>

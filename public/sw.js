@@ -1,4 +1,4 @@
-const CACHE_NAME = "climacontrol-v1";
+const CACHE_NAME = "movement-v2";
 const PRECACHE = ["/", "/index.html", "/favicon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -26,6 +26,8 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // A API pode ser servida no mesmo domínio pelo Nginx.
+  if (url.pathname.startsWith("/api/") || request.headers.has("Authorization")) return;
   if (url.pathname.includes("/firebase") || url.hostname.includes("firebase")) return;
 
   event.respondWith(
@@ -33,6 +35,7 @@ self.addEventListener("fetch", (event) => {
       const fetchPromise = fetch(request)
         .then((response) => {
           if (response.ok) {
+            if (response.headers.get("Cache-Control")?.includes("no-store")) return response;
             const copy = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }

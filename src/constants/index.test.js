@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcTargetTemp, MIN_TARGET_TEMP } from "./index";
+import { calcTargetTemp, computeAcUsage, MIN_TARGET_TEMP } from "./index";
 
 describe("calcTargetTemp", () => {
   it("retorna 0 quando não há pessoas", () => {
@@ -31,5 +31,15 @@ describe("calcTargetTemp", () => {
   it("trata limite exato (não inclusivo) de 30°C", () => {
     expect(calcTargetTemp(10, 30)).toBe(22);
     expect(calcTargetTemp(10, 30.1)).toBe(21);
+  });
+});
+
+describe("computeAcUsage", () => {
+  it("conta estado efetivo mesmo quando o alvo fica positivo", () => {
+    expect(computeAcUsage([
+      { timestamp: 0, tempAlvo: 24, acLigado: false },
+      { timestamp: 3600000, tempAlvo: 24, acLigado: true },
+      { timestamp: 7200000, tempAlvo: 24, acLigado: false },
+    ])).toEqual({ hoursOn: 1, totalHours: 2, percent: 50 });
   });
 });

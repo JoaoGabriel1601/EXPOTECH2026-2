@@ -20,7 +20,8 @@ function SystemStatusComponent({ live, acOn, connectionStatus }) {
   return (
     <div className="system-grid">
       {SENSORS.map((sensor) => {
-        let status = "online";
+        let status = cloudOnline ? "online" : "offline";
+        const label = sensor.id === "thingspeak" ? "API Movement" : sensor.label;
         let detail = sensor.detail;
         if (sensor.isAcLed) {
           status = acOn ? "ativo" : "standby";
@@ -38,13 +39,13 @@ function SystemStatusComponent({ live, acOn, connectionStatus }) {
         return (
           <div key={sensor.id} className="sensor-card">
             <div>
-              <div className="sensor-card__label">{sensor.label}</div>
+              <div className="sensor-card__label">{label}</div>
               <div className="sensor-card__detail">{detail}</div>
             </div>
             <span
               className={dotClass(status)}
               role="status"
-              aria-label={`${sensor.label}: ${status}`}
+              aria-label={`${label}: ${status}`}
             />
           </div>
         );

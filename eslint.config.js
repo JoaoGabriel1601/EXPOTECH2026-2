@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'mobile/**', 'api/**', '**/swagger-ui/**']),
+  globalIgnores(['dist', 'mobile/**', 'api/**', '.local/**', 'backend/.venv/**', '**/swagger-ui/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
